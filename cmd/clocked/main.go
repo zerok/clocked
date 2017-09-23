@@ -60,10 +60,7 @@ func main() {
 		log.WithError(err).Fatal("Failed to initialize application")
 	}
 	defer termbox.Close()
-
-	w, h := termbox.Size()
-	app.setWidth(w)
-	app.height = h
+	app.handleResize()
 	app.mode = selectionMode
 	app.start()
 }

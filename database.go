@@ -27,6 +27,18 @@ func (d *Database) ActiveCode() string {
 	return d.activeCode
 }
 
+func (d *Database) ActiveTask() (Task, bool) {
+	if d.activeCode == "" {
+		return Task{}, false
+	}
+	for _, task := range d.taskIndex {
+		if task.Code == d.activeCode {
+			return task, true
+		}
+	}
+	return Task{}, false
+}
+
 func NewDatabase(path string, log *logrus.Logger) (*Database, error) {
 	d := Database{
 		rootFolder:    path,

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -179,10 +180,17 @@ func (a *application) drawLabel(xOffset, yOffset int, text string, focused bool)
 }
 
 func (a *application) drawText(xOffset, yOffset int, text string, fg, bg termbox.Attribute) int {
+	var drawnChars int
 	for idx, c := range text {
-		termbox.SetCell(xOffset+idx, yOffset, c, fg, bg)
+		drawnChars++
+		if xOffset+idx == a.maxXOffset {
+			termbox.SetCell(xOffset+idx, yOffset, '\u2026', fg, bg)
+			break
+		} else {
+			termbox.SetCell(xOffset+idx, yOffset, c, fg, bg)
+		}
 	}
-	return xOffset + len(text)
+	return xOffset + drawnChars
 }
 
 func (a *application) redrawTasklist(xOffset, maxXOffset, yOffset int) {
@@ -210,16 +218,26 @@ func (a *application) redrawAll() {
 	if a.mode == selectionMode {
 		a.redrawFilter(a.minXOffset, a.maxXOffset, yOffset)
 		a.redrawTasklist(a.minXOffset, a.maxXOffset/2, yOffset)
-		a.redrawSummary(a.maxXOffset/2+1, a.minYOffset)
+		a.redrawActiveTask(a.minXOffset, a.maxYOffset-2)
 	} else if a.mode == newTaskMode {
 		a.redrawForm(a.minXOffset, yOffset)
 	}
 	termbox.Flush()
 }
 
-func (a *application) redrawSummary(xOffset, yOffset int) int {
-	xOffset = a.drawLabel(xOffset, yOffset, "Active task: ", false)
-	return a.drawLabel(xOffset, yOffset, a.db.ActiveCode(), true)
+func (a *application) redrawActiveTask(xOffset, yOffset int) int {
+	if a.db.ActiveCode() == "" {
+		return 0
+	}
+	task, ok := a.db.ActiveTask()
+	if !ok {
+		return 0
+	}
+	a.drawLine(yOffset)
+	xOffset = a.drawLabel(xOffset, yOffset+1, "Active task: ", false)
+	xOffset = a.drawText(xOffset, yOffset+1, a.db.ActiveCode(), termbox.AttrBold|termbox.ColorGreen, termbox.ColorDefault)
+	a.drawText(xOffset+1, yOffset+1, fmt.Sprintf("(%s)", task.Title), termbox.ColorWhite, termbox.ColorDefault)
+	return 3
 }
 
 func (a *application) redrawError(xOffset, yOffset int) int {
