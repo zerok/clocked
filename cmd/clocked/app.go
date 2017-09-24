@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Sirupsen/logrus"
 	termbox "github.com/nsf/termbox-go"
@@ -16,28 +15,34 @@ const (
 )
 
 type application struct {
-	log              *logrus.Logger
-	form             *form.Form
-	err              error
-	mode             int
-	width            int
-	height           int
-	minXOffset       int
-	maxXOffset       int
-	minYOffset       int
-	maxYOffset       int
-	focusedField     string
-	db               *clocked.Database
-	selectedTaskCode string
-	numRows          int
-	filter           string
-	visibleTaskCodes []string
+	log                  *logrus.Logger
+	form                 *form.Form
+	err                  error
+	mode                 int
+	area                 Area
+	filterLineHeight     int
+	taskStatusLineHeight int
+	errorLineHeight      int
+	focusedField         string
+	taskListView         *ScrollableList
+	db                   *clocked.Database
+	selectedTaskCode     string
+	numRows              int
+	filter               string
+	visibleTaskCodes     []string
+}
+
+func newApplication() *application {
+	a := &application{}
+	a.taskListView = NewScrollableList(Area{})
+	return a
 }
 
 func (a *application) start() {
 	a.reset()
 	a.redrawAll()
 	for {
+		a.handleResize()
 		switch evt := termbox.PollEvent(); evt.Type {
 		case termbox.EventResize:
 			a.handleResize()
@@ -52,8 +57,15 @@ func (a *application) start() {
 
 func (a *application) handleResize() {
 	w, h := termbox.Size()
-	a.setWidth(w)
-	a.setHeight(h)
+	a.area.Width = w
+	a.area.Height = h
+
+	a.taskListView.UpdateArea(Area{
+		X:      a.area.X,
+		Y:      a.area.Y,
+		Width:  a.area.Width,
+		Height: h - a.taskStatusLineHeight - a.filterLineHeight - a.errorLineHeight,
+	})
 }
 
 func (a *application) handleKey(evt termbox.Event) bool {
@@ -110,13 +122,18 @@ func (a *application) handleSelectionModeKey(evt termbox.Event) {
 		a.selectPreviousRow()
 	case termbox.KeyTab:
 	case termbox.KeyEnter:
-		if a.db.ActiveCode() == a.selectedTaskCode {
-			if err := a.db.ClockOutOf(a.selectedTaskCode); err != nil {
+		selectedItem, selected := a.taskListView.SelectedItem()
+		if !selected {
+			return
+		}
+		selectedTask := selectedItem.(clocked.Task)
+		if a.db.ActiveCode() == selectedTask.Code {
+			if err := a.db.ClockOutOf(a.db.ActiveCode()); err != nil {
 				a.err = err
 			}
 			return
 		}
-		if err := a.db.ClockInto(a.selectedTaskCode); err != nil {
+		if err := a.db.ClockInto(selectedTask.Code); err != nil {
 			a.err = err
 			return
 		}
@@ -127,21 +144,6 @@ func (a *application) handleSelectionModeKey(evt termbox.Event) {
 			return
 		}
 		a.pushFilter(evt.Ch)
-	}
-}
-
-func (a *application) setWidth(w int) {
-	a.width = w
-	a.maxXOffset = w - 2
-	a.minXOffset = 1
-}
-
-func (a *application) setHeight(h int) {
-	a.height = h
-	a.maxYOffset = h - 2
-	a.minYOffset = 2
-	if a.minYOffset > a.maxYOffset {
-		a.minYOffset = a.maxYOffset
 	}
 }
 
@@ -164,10 +166,11 @@ func (a *application) reset() {
 }
 
 func (a *application) redrawFilter(xOffset, maxXOffset, yOffset int) {
-	yOffset = a.height - 1
+	yOffset = a.area.YMax()
 	a.drawLine(yOffset - 1)
 	xOffset = a.drawLabel(xOffset, yOffset, "Search:", false)
 	a.drawFieldValue(xOffset+1, maxXOffset, yOffset, a.filter, false)
+	a.filterLineHeight = 2
 }
 
 func (a *application) drawLabel(xOffset, yOffset int, text string, focused bool) int {
@@ -183,7 +186,7 @@ func (a *application) drawText(xOffset, yOffset int, text string, fg, bg termbox
 	var drawnChars int
 	for idx, c := range text {
 		drawnChars++
-		if xOffset+idx == a.maxXOffset {
+		if xOffset+idx == a.area.XMax() {
 			termbox.SetCell(xOffset+idx, yOffset, '\u2026', fg, bg)
 			break
 		} else {
@@ -193,58 +196,66 @@ func (a *application) drawText(xOffset, yOffset int, text string, fg, bg termbox
 	return xOffset + drawnChars
 }
 
-func (a *application) redrawTasklist(xOffset, maxXOffset, yOffset int) {
-	tasks, _ := a.db.AllTasks()
-	num := 0
-	normalizedFilter := strings.ToLower(a.filter)
-	idx := 0
-	visibleTaskCodes := make([]string, 0, 10)
-	for _, task := range tasks {
-		normalizedTask := strings.ToLower(task.Title)
-		if len(a.filter) == 0 || strings.Contains(normalizedTask, normalizedFilter) {
-			visibleTaskCodes = append(visibleTaskCodes, task.Code)
-			a.drawTaskLine(&task, xOffset, maxXOffset, yOffset+idx+1, task.Code == a.selectedTaskCode, a.db.ActiveCode() == task.Code)
-			idx++
-			num++
-		}
+func (a *application) updateTaskList() {
+	tasks, _ := a.db.FilteredTasks(a.filter)
+	items := make([]ScrollableListItem, 0, len(tasks))
+	for _, t := range tasks {
+		items = append(items, t)
 	}
-	a.numRows = num
-	a.visibleTaskCodes = visibleTaskCodes
+	a.taskListView.UpdateItems(items)
 }
 
 func (a *application) redrawAll() {
 	a.reset()
 	yOffset := a.redrawError(2, 1)
 	if a.mode == selectionMode {
-		a.redrawFilter(a.minXOffset, a.maxXOffset, yOffset)
-		a.redrawTasklist(a.minXOffset, a.maxXOffset/2, yOffset)
-		a.redrawActiveTask(a.minXOffset, a.maxYOffset-2)
+		a.redrawFilter(a.area.XMin(), a.area.Width, yOffset)
+		a.redrawActiveTask(a.area.XMin(), a.area.YMax()-3)
+		// TODO: Only update the task list on actual actions that change the
+		//       list of selected tasks.
+		a.recalculateDimensions()
+		a.updateTaskList()
+		a.taskListView.Render()
 	} else if a.mode == newTaskMode {
-		a.redrawForm(a.minXOffset, yOffset)
+		a.redrawForm(a.area.XMin(), yOffset)
 	}
 	termbox.Flush()
 }
 
+func (a *application) recalculateDimensions() {
+	a.taskListView.UpdateArea(Area{
+		X:      0,
+		Y:      0,
+		Width:  a.area.Width,
+		Height: a.area.Height - a.taskStatusLineHeight - a.filterLineHeight - a.errorLineHeight,
+	})
+}
+
 func (a *application) redrawActiveTask(xOffset, yOffset int) int {
 	if a.db.ActiveCode() == "" {
+		a.taskStatusLineHeight = 0
 		return 0
 	}
 	task, ok := a.db.ActiveTask()
 	if !ok {
+		a.taskStatusLineHeight = 0
 		return 0
 	}
 	a.drawLine(yOffset)
 	xOffset = a.drawLabel(xOffset, yOffset+1, "Active task: ", false)
 	xOffset = a.drawText(xOffset, yOffset+1, a.db.ActiveCode(), termbox.AttrBold|termbox.ColorGreen, termbox.ColorDefault)
 	a.drawText(xOffset+1, yOffset+1, fmt.Sprintf("(%s)", task.Title), termbox.ColorWhite, termbox.ColorDefault)
-	return 3
+	a.taskStatusLineHeight = 2
+	return 2
 }
 
 func (a *application) redrawError(xOffset, yOffset int) int {
 	if a.err != nil {
 		a.drawError(xOffset, yOffset, a.err.Error())
+		a.errorLineHeight = 1
 		return 1
 	}
+	a.errorLineHeight = 0
 	return 0
 }
 
@@ -267,7 +278,7 @@ func (a *application) redrawForm(xOffset, initialYOffset int) {
 
 	yOffset = initialYOffset + 1
 	for _, fld := range a.form.Fields() {
-		a.drawFieldValue(inputStartOffset, a.width-2, yOffset, fld.Value, fld.Code == a.focusedField)
+		a.drawFieldValue(inputStartOffset, a.area.Width-2, yOffset, fld.Value, fld.Code == a.focusedField)
 		a.drawError(inputStartOffset, yOffset+1, fld.Error)
 		yOffset += 3
 	}
@@ -323,27 +334,11 @@ func (a *application) getCurrentTaskCodeIndex() int {
 }
 
 func (a *application) selectNextRow() {
-	cur := a.getCurrentTaskCodeIndex()
-	if len(a.visibleTaskCodes) == 0 {
-		return
-	}
-	if cur == -1 || cur+1 > len(a.visibleTaskCodes)-1 {
-		a.selectedTaskCode = a.visibleTaskCodes[0]
-		return
-	}
-	a.selectedTaskCode = a.visibleTaskCodes[cur+1]
+	a.taskListView.Next()
 }
 
 func (a *application) selectPreviousRow() {
-	cur := a.getCurrentTaskCodeIndex()
-	if len(a.visibleTaskCodes) == 0 {
-		return
-	}
-	if cur == -1 || cur-1 < 0 {
-		a.selectedTaskCode = a.visibleTaskCodes[len(a.visibleTaskCodes)-1]
-		return
-	}
-	a.selectedTaskCode = a.visibleTaskCodes[cur-1]
+	a.taskListView.Previous()
 }
 
 func (a *application) pushFilter(c rune) {
@@ -358,7 +353,7 @@ func (a *application) popFilter() {
 }
 
 func (a *application) drawLine(yOffset int) {
-	for i := 0; i < a.width; i++ {
+	for i := a.area.XMin(); i <= a.area.XMax(); i++ {
 		termbox.SetCell(i, yOffset, '\u2500', termbox.ColorBlue, termbox.ColorDefault)
 	}
 }

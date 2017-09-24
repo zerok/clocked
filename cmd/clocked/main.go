@@ -40,7 +40,7 @@ func main() {
 	pflag.StringVar(&storageFolder, "store", filepath.Join(os.Getenv("HOME"), ".clocked"), "Path where clocked will store its data")
 	pflag.Parse()
 
-	app := application{}
+	app := newApplication()
 	db, err := clocked.NewDatabase(storageFolder, log)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to load databse from %s", storageFolder)

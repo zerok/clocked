@@ -131,10 +131,13 @@ func (d *Database) ClockInto(code string) error {
 		return fmt.Errorf("Task %s not found", code)
 	}
 	for idx := range d.taskIndex {
+		task := (&d.taskIndex[idx])
+		if code != task.Code {
+			continue
+		}
 		if err := d.setActiveCode(code); err != nil {
 			return err
 		}
-		task := (&d.taskIndex[idx])
 		if err := task.Start(time.Now()); err != nil {
 			return err
 		}
@@ -148,10 +151,13 @@ func (d *Database) ClockOutOf(code string) error {
 		return fmt.Errorf("Task %s not found", code)
 	}
 	for idx := range d.taskIndex {
+		task := (&d.taskIndex[idx])
+		if code != task.Code {
+			continue
+		}
 		if err := d.setActiveCode(""); err != nil {
 			return err
 		}
-		task := (&d.taskIndex[idx])
 		if err := task.Stop(time.Now()); err != nil {
 			return err
 		}
@@ -162,6 +168,21 @@ func (d *Database) ClockOutOf(code string) error {
 
 func (d *Database) AllTasks() ([]Task, error) {
 	return d.taskIndex, nil
+}
+
+func (d *Database) FilteredTasks(f string) ([]Task, error) {
+	if f == "" {
+		return d.AllTasks()
+	}
+	q := strings.ToLower(f)
+	result := make([]Task, 0, 5)
+	for _, t := range d.taskIndex {
+		l := strings.ToLower(t.Label())
+		if strings.Contains(l, q) {
+			result = append(result, t)
+		}
+	}
+	return result, nil
 }
 
 func (d *Database) setActiveCode(code string) error {

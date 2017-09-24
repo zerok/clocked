@@ -1,6 +1,9 @@
 package clocked
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Task struct {
 	Code     string    `yaml:"code"`
@@ -20,6 +23,10 @@ func (t *Task) Stop(tm time.Time) error {
 	b := &t.Bookings[len(t.Bookings)-1]
 	b.SetStop(tm)
 	return nil
+}
+
+func (t Task) Label() string {
+	return fmt.Sprintf("%s %s", t.Code, t.Title)
 }
 
 type Booking struct {
