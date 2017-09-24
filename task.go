@@ -41,3 +41,19 @@ func (b *Booking) SetStart(t time.Time) {
 func (b *Booking) SetStop(t time.Time) {
 	b.Stop = t.Format(time.RFC3339)
 }
+
+func (b *Booking) StartTime() *time.Time {
+	if b.Start == "" {
+		return nil
+	}
+	t, _ := time.Parse(time.RFC3339, b.Start)
+	return &t
+}
+
+func (b *Booking) StopTime() *time.Time {
+	if b.Stop == "" {
+		return nil
+	}
+	t, _ := time.Parse(time.RFC3339, b.Stop)
+	return &t
+}

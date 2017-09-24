@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -144,6 +145,76 @@ func (d *Database) ClockInto(code string) error {
 		return d.saveTask(task)
 	}
 	return nil
+}
+
+type Summary struct {
+	Bookings []TaskBooking
+	Totals   map[string]time.Duration
+}
+
+type TaskBooking struct {
+	Code  string
+	Start *time.Time
+	Stop  *time.Time
+}
+
+type ByStart []TaskBooking
+
+func (b ByStart) Len() int {
+	return len(b)
+}
+func (b ByStart) Swap(i, j int) {
+	b[i], b[j] = b[j], b[i]
+}
+
+func (b ByStart) Less(i, j int) bool {
+	aStart := b[i].Start
+	bStart := b[j].Start
+	if bStart == nil && aStart != nil {
+		return true
+	}
+	if aStart == nil && bStart != nil {
+		return false
+	}
+	if aStart == nil && bStart == nil {
+		return false
+	}
+	return aStart.Before(*bStart)
+}
+
+func (d *Database) GenerateDailySummary(t time.Time) Summary {
+	summary := Summary{}
+	summary.Totals = make(map[string]time.Duration)
+	summary.Bookings = make([]TaskBooking, 0, 10)
+	for _, tsk := range d.taskIndex {
+		if tsk.Bookings != nil {
+			for _, b := range tsk.Bookings {
+				start := b.StartTime()
+				if start != nil {
+					if isSameDay(*start, t) {
+						summary.Bookings = append(summary.Bookings, TaskBooking{
+							Code:  tsk.Code,
+							Start: start,
+							Stop:  b.StopTime(),
+						})
+						stop := b.StopTime()
+						if stop != nil {
+							prev := summary.Totals[tsk.Code]
+							summary.Totals[tsk.Code] = prev + stop.Sub(*start)
+						}
+					}
+				}
+			}
+		}
+	}
+	sort.Sort(ByStart(summary.Bookings))
+	return summary
+}
+
+func isSameDay(a time.Time, b time.Time) bool {
+	aYear, aMonth, aDay := a.Date()
+	bYear, bMonth, bDay := b.Date()
+	return aYear == bYear && aMonth == bMonth && aDay == bDay
 }
 
 func (d *Database) ClockOutOf(code string) error {

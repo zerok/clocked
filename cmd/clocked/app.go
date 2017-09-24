@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	termbox "github.com/nsf/termbox-go"
@@ -12,6 +13,7 @@ import (
 const (
 	newTaskMode   = iota
 	selectionMode = iota
+	summaryMode   = iota
 )
 
 type application struct {
@@ -72,11 +74,17 @@ func (a *application) handleKey(evt termbox.Event) bool {
 	if evt.Key == termbox.KeyCtrlC {
 		return false
 	}
+	if evt.Key == termbox.KeyCtrlS {
+		a.switchMode(summaryMode)
+		return true
+	}
 	switch a.mode {
 	case selectionMode:
 		a.handleSelectionModeKey(evt)
 	case newTaskMode:
 		a.handleNewTaskModeKey(evt)
+	case summaryMode:
+		a.handleSummaryModeKey(evt)
 	}
 	return true
 }
@@ -85,6 +93,13 @@ func convertToTask(f *form.Form) clocked.Task {
 	return clocked.Task{
 		Code:  f.Value("code"),
 		Title: f.Value("title"),
+	}
+}
+
+func (a *application) handleSummaryModeKey(evt termbox.Event) {
+	switch evt.Key {
+	case termbox.KeyEsc:
+		a.switchMode(selectionMode)
 	}
 }
 
@@ -208,7 +223,10 @@ func (a *application) updateTaskList() {
 func (a *application) redrawAll() {
 	a.reset()
 	yOffset := a.redrawError(2, 1)
-	if a.mode == selectionMode {
+	switch a.mode {
+	case summaryMode:
+		a.redrawSummary()
+	case selectionMode:
 		a.redrawFilter(a.area.XMin(), a.area.Width, yOffset)
 		a.redrawActiveTask(a.area.XMin(), a.area.YMax()-3)
 		// TODO: Only update the task list on actual actions that change the
@@ -216,10 +234,30 @@ func (a *application) redrawAll() {
 		a.recalculateDimensions()
 		a.updateTaskList()
 		a.taskListView.Render()
-	} else if a.mode == newTaskMode {
+	case newTaskMode:
 		a.redrawForm(a.area.XMin(), yOffset)
 	}
 	termbox.Flush()
+}
+func formatTime(t *time.Time) string {
+	if t == nil {
+		return "..."
+	}
+	return t.Format("15:04:05")
+}
+func (a *application) redrawSummary() {
+	now := time.Now()
+	a.drawText(a.area.XMin(), a.area.YMin(), fmt.Sprintf("Summary for %s", now.Format("2 Jan 2006")), termbox.ColorBlue|termbox.AttrBold, termbox.ColorDefault)
+	summary := a.db.GenerateDailySummary(now)
+	for idx, b := range summary.Bookings {
+		a.drawText(a.area.XMin(), a.area.YMin()+1+idx, fmt.Sprintf("%s - %s (%s)", formatTime(b.Start), formatTime(b.Stop), b.Code), termbox.ColorDefault, termbox.ColorDefault)
+	}
+
+	idx := 0
+	for key, dur := range summary.Totals {
+		a.drawText(a.area.XMin()+a.area.Width/2, a.area.YMin()+1+idx, fmt.Sprintf("%s: %s", key, dur), termbox.ColorDefault, termbox.ColorDefault)
+		idx++
+	}
 }
 
 func (a *application) recalculateDimensions() {
