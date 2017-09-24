@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"gopkg.in/v1/yaml"
+	"gopkg.in/yaml.v2"
 )
 
 const ActiveCodeFilename = "activeCode"

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"time"
+	"unicode/utf8"
 
 	"github.com/Sirupsen/logrus"
 	termbox "github.com/nsf/termbox-go"
@@ -171,7 +172,7 @@ func (a *application) handleFieldInput(evt termbox.Event) {
 		}
 		v = v[0 : len(v)-1]
 	} else {
-		v = v + string(evt.Ch)
+		v = appendRune(v, evt.Ch)
 	}
 	a.form.SetValue(a.focusedField, v)
 }
@@ -379,8 +380,14 @@ func (a *application) selectPreviousRow() {
 	a.taskListView.Previous()
 }
 
+func appendRune(s string, r rune) string {
+	b := make([]byte, 3)
+	l := utf8.EncodeRune(b, r)
+	return s + string(b[0:l])
+}
+
 func (a *application) pushFilter(c rune) {
-	a.filter += string(c)
+	a.filter = appendRune(a.filter, c)
 }
 
 func (a *application) popFilter() {
