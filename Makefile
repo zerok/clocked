@@ -6,5 +6,8 @@ clocked: $(shell find . -name '*.go')
 clean:
 	rm -f clocked
 
+install:
+	cd cmd/clocked && go install
+
 .PHONY: clean
 .PHONY: all
