@@ -7,7 +7,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	termbox "github.com/nsf/termbox-go"
 	"github.com/ogier/pflag"
-	"github.com/zerok/clocked"
+	"github.com/zerok/clocked/internal/database"
 	"github.com/zerok/clocked/internal/form"
 )
 
@@ -41,7 +41,7 @@ func main() {
 	pflag.Parse()
 
 	app := newApplication()
-	db, err := clocked.NewDatabase(storageFolder, log)
+	db, err := database.NewDatabase(storageFolder, log)
 	if err != nil {
 		log.WithError(err).Fatalf("Failed to load databse from %s", storageFolder)
 	}

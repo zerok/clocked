@@ -1,4 +1,4 @@
-package clocked
+package database
 
 import (
 	"fmt"
@@ -10,38 +10,39 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	"github.com/zerok/clocked"
+	"gopkg.in/v1/yaml"
 )
 
 const ActiveCodeFilename = "activeCode"
 const TasksFolder = "tasks"
 
-type Database struct {
-	taskIndex     []Task
+type FolderBasedDatabase struct {
+	taskIndex     []clocked.Task
 	taskCodeIndex map[string]struct{}
 	activeCode    string
 	rootFolder    string
 	log           *logrus.Logger
 }
 
-func (d *Database) ActiveCode() string {
+func (d *FolderBasedDatabase) ActiveCode() string {
 	return d.activeCode
 }
 
-func (d *Database) ActiveTask() (Task, bool) {
+func (d *FolderBasedDatabase) ActiveTask() (clocked.Task, bool) {
 	if d.activeCode == "" {
-		return Task{}, false
+		return clocked.Task{}, false
 	}
 	for _, task := range d.taskIndex {
 		if task.Code == d.activeCode {
 			return task, true
 		}
 	}
-	return Task{}, false
+	return clocked.Task{}, false
 }
 
-func NewDatabase(path string, log *logrus.Logger) (*Database, error) {
-	d := Database{
+func NewDatabase(path string, log *logrus.Logger) (Database, error) {
+	d := FolderBasedDatabase{
 		rootFolder:    path,
 		log:           log,
 		taskCodeIndex: make(map[string]struct{}),
@@ -49,7 +50,7 @@ func NewDatabase(path string, log *logrus.Logger) (*Database, error) {
 	return &d, nil
 }
 
-func (d *Database) LoadState() error {
+func (d *FolderBasedDatabase) LoadState() error {
 	d.log.Infof("Loading state")
 	activeCodeFile := filepath.Join(d.rootFolder, ActiveCodeFilename)
 	tasksFolder := filepath.Join(d.rootFolder, TasksFolder)
@@ -81,7 +82,7 @@ func (d *Database) LoadState() error {
 	return nil
 }
 
-func (d *Database) loadTask(path string) (*Task, error) {
+func (d *FolderBasedDatabase) loadTask(path string) (*clocked.Task, error) {
 	baseName := filepath.Base(path)
 	segments := strings.Split(baseName, ".")
 	if len(segments) < 2 {
@@ -92,7 +93,7 @@ func (d *Database) loadTask(path string) (*Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	var t Task
+	var t clocked.Task
 	if err := yaml.Unmarshal(data, &t); err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func (d *Database) loadTask(path string) (*Task, error) {
 	return &t, nil
 }
 
-func (d *Database) saveTask(tsk *Task) error {
+func (d *FolderBasedDatabase) saveTask(tsk *clocked.Task) error {
 	path := filepath.Join(d.rootFolder, "tasks", fmt.Sprintf("%s.yml", tsk.Code))
 	data, err := yaml.Marshal(tsk)
 	if err != nil {
@@ -109,7 +110,7 @@ func (d *Database) saveTask(tsk *Task) error {
 	return ioutil.WriteFile(path, data, 0600)
 }
 
-func (d *Database) AddTask(t Task) error {
+func (d *FolderBasedDatabase) AddTask(t clocked.Task) error {
 	if d.taskCodeIndex == nil {
 		d.taskCodeIndex = make(map[string]struct{})
 	}
@@ -121,7 +122,7 @@ func (d *Database) AddTask(t Task) error {
 	return d.saveTask(&t)
 }
 
-func (d *Database) ClockInto(code string) error {
+func (d *FolderBasedDatabase) ClockInto(code string) error {
 	// If another task is active, clock out of that first
 	if d.activeCode != "" {
 		if err := d.ClockOutOf(d.activeCode); err != nil {
@@ -182,7 +183,7 @@ func (b ByStart) Less(i, j int) bool {
 	return aStart.Before(*bStart)
 }
 
-func (d *Database) GenerateDailySummary(t time.Time) Summary {
+func (d *FolderBasedDatabase) GenerateDailySummary(t time.Time) Summary {
 	summary := Summary{}
 	summary.Totals = make(map[string]time.Duration)
 	summary.Bookings = make([]TaskBooking, 0, 10)
@@ -217,7 +218,7 @@ func isSameDay(a time.Time, b time.Time) bool {
 	return aYear == bYear && aMonth == bMonth && aDay == bDay
 }
 
-func (d *Database) ClockOutOf(code string) error {
+func (d *FolderBasedDatabase) ClockOutOf(code string) error {
 	if _, ok := d.taskCodeIndex[code]; !ok {
 		return fmt.Errorf("Task %s not found", code)
 	}
@@ -237,16 +238,16 @@ func (d *Database) ClockOutOf(code string) error {
 	return nil
 }
 
-func (d *Database) AllTasks() ([]Task, error) {
+func (d *FolderBasedDatabase) AllTasks() ([]clocked.Task, error) {
 	return d.taskIndex, nil
 }
 
-func (d *Database) FilteredTasks(f string) ([]Task, error) {
+func (d *FolderBasedDatabase) FilteredTasks(f string) ([]clocked.Task, error) {
 	if f == "" {
 		return d.AllTasks()
 	}
 	q := strings.ToLower(f)
-	result := make([]Task, 0, 5)
+	result := make([]clocked.Task, 0, 5)
 	for _, t := range d.taskIndex {
 		l := strings.ToLower(t.Label())
 		if strings.Contains(l, q) {
@@ -256,7 +257,7 @@ func (d *Database) FilteredTasks(f string) ([]Task, error) {
 	return result, nil
 }
 
-func (d *Database) setActiveCode(code string) error {
+func (d *FolderBasedDatabase) setActiveCode(code string) error {
 	path := filepath.Join(d.rootFolder, ActiveCodeFilename)
 	if err := os.MkdirAll(d.rootFolder, 0700); err != nil {
 		return err

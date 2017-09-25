@@ -8,6 +8,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	termbox "github.com/nsf/termbox-go"
 	"github.com/zerok/clocked"
+	"github.com/zerok/clocked/internal/database"
 	"github.com/zerok/clocked/internal/form"
 )
 
@@ -28,7 +29,7 @@ type application struct {
 	errorLineHeight      int
 	focusedField         string
 	taskListView         *ScrollableList
-	db                   *clocked.Database
+	db                   database.Database
 	selectedTaskCode     string
 	numRows              int
 	filter               string
@@ -43,6 +44,7 @@ func newApplication() *application {
 
 func (a *application) start() {
 	a.reset()
+	a.updateTaskList()
 	a.redrawAll()
 	for {
 		a.handleResize()
@@ -233,7 +235,6 @@ func (a *application) redrawAll() {
 		// TODO: Only update the task list on actual actions that change the
 		//       list of selected tasks.
 		a.recalculateDimensions()
-		a.updateTaskList()
 		a.taskListView.Render()
 	case newTaskMode:
 		a.redrawForm(a.area.XMin(), yOffset)
@@ -372,6 +373,10 @@ func (a *application) getCurrentTaskCodeIndex() int {
 	return -1
 }
 
+func (a *application) selectFirstRow() {
+	a.taskListView.SelectItemByIndex(0)
+}
+
 func (a *application) selectNextRow() {
 	a.taskListView.Next()
 }
@@ -388,6 +393,8 @@ func appendRune(s string, r rune) string {
 
 func (a *application) pushFilter(c rune) {
 	a.filter = appendRune(a.filter, c)
+	a.updateTaskList()
+	a.selectFirstRow()
 }
 
 func (a *application) popFilter() {
@@ -395,6 +402,8 @@ func (a *application) popFilter() {
 		return
 	}
 	a.filter = a.filter[0 : len(a.filter)-1]
+	a.updateTaskList()
+	a.selectFirstRow()
 }
 
 func (a *application) drawLine(yOffset int) {

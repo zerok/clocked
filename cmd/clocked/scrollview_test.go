@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type MockScrollViewItem string
@@ -20,10 +20,10 @@ func TestScrollviewUpdateOffset(t *testing.T) {
 	sv.windowSize = 3
 	sv.selectedIndex = 3
 	sv.recalculateOffset()
-	assert.Equal(t, 1, sv.offset)
+	require.Equal(t, 1, sv.offset)
 	sv.selectedIndex = 4
 	sv.recalculateOffset()
-	assert.Equal(t, 2, sv.offset)
+	require.Equal(t, 2, sv.offset)
 }
 
 func TestScrollViewSelectedItem(t *testing.T) {
@@ -39,8 +39,8 @@ func TestScrollViewSelectedItem(t *testing.T) {
 	sv.Next()     // a
 	sv.Previous() // c
 	selected, ok := sv.SelectedItem()
-	assert.True(t, ok, "An item should have been selected")
-	assert.Equal(t, "c", selected.Label(), "c should have been the selected item")
+	require.True(t, ok, "An item should have been selected")
+	require.Equal(t, "c", selected.Label(), "c should have been the selected item")
 
 	// If the number of available items gets smaller and the previously
 	// selected item is beyond that number, no item should end up being
@@ -50,5 +50,5 @@ func TestScrollViewSelectedItem(t *testing.T) {
 		MockScrollViewItem("b"),
 	})
 	_, ok = sv.SelectedItem()
-	assert.False(t, ok, "No item should have been selected")
+	require.False(t, ok, "No item should have been selected")
 }

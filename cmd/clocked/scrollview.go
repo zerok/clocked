@@ -26,6 +26,14 @@ func NewScrollableList(area Area) *ScrollableList {
 	}
 }
 
+func (s *ScrollableList) SelectItemByIndex(i int) (ScrollableListItem, bool) {
+	if i >= len(s.items) {
+		return nil, false
+	}
+	s.selectedIndex = i
+	return s.items[i], true
+}
+
 func (s *ScrollableList) drawWindow() {
 	line := 0
 	for i := s.offset; i < s.offset+s.windowSize; i++ {
