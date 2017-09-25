@@ -71,6 +71,9 @@ func (s *ScrollableList) SelectedItem() (ScrollableListItem, bool) {
 	if s.selectedIndex < 0 {
 		return nil, false
 	}
+	if s.selectedIndex >= len(s.items) {
+		return nil, false
+	}
 	return s.items[s.selectedIndex], true
 }
 
@@ -95,6 +98,9 @@ func (s *ScrollableList) UpdateArea(a Area) {
 }
 
 func (s *ScrollableList) UpdateItems(i []ScrollableListItem) {
+	if s.selectedIndex >= len(i) {
+		s.selectedIndex = -1
+	}
 	s.items = i
 }
 

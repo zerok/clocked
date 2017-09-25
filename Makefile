@@ -9,5 +9,9 @@ clean:
 install:
 	cd cmd/clocked && go install
 
+test:
+	go test ./... -v
+
 .PHONY: clean
 .PHONY: all
+.PHONY: test
