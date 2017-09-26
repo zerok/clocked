@@ -263,6 +263,9 @@ func (a *application) redrawSummary() {
 		a.drawText(a.area.XMin()+a.area.Width/2, a.area.YMin()+1+idx, fmt.Sprintf("%s: %s", key, dur), termbox.ColorDefault, termbox.ColorDefault)
 		idx++
 	}
+	idx++
+	a.drawText(a.area.XMin()+a.area.Width/2, a.area.YMin()+1+idx, "Total: ", termbox.ColorDefault|termbox.AttrBold, termbox.ColorDefault)
+	a.drawText(a.area.XMin()+a.area.Width/2+7, a.area.YMin()+1+idx, summary.Total.String(), termbox.ColorDefault, termbox.ColorDefault)
 }
 
 func (a *application) recalculateDimensions() {

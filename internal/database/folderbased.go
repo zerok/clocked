@@ -151,6 +151,7 @@ func (d *FolderBasedDatabase) ClockInto(code string) error {
 type Summary struct {
 	Bookings []TaskBooking
 	Totals   map[string]time.Duration
+	Total    time.Duration
 }
 
 type TaskBooking struct {
@@ -201,7 +202,9 @@ func (d *FolderBasedDatabase) GenerateDailySummary(t time.Time) Summary {
 						stop := b.StopTime()
 						if stop != nil {
 							prev := summary.Totals[tsk.Code]
-							summary.Totals[tsk.Code] = prev + stop.Sub(*start)
+							dur := stop.Sub(*start)
+							summary.Totals[tsk.Code] = prev + dur
+							summary.Total += dur
 						}
 					}
 				}
