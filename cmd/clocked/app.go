@@ -19,6 +19,7 @@ const (
 )
 
 type application struct {
+	summaryViewDate      *time.Time
 	log                  *logrus.Logger
 	form                 *form.Form
 	err                  error
@@ -103,6 +104,26 @@ func (a *application) handleSummaryModeKey(evt termbox.Event) {
 	switch evt.Key {
 	case termbox.KeyEsc:
 		a.switchMode(selectionMode)
+		a.summaryViewDate = nil
+	default:
+		dateDelta := 0
+
+		switch evt.Ch {
+		case 'j':
+			dateDelta = 1
+		case 'k':
+			dateDelta = -1
+		}
+
+		if dateDelta != 0 {
+			nextDate := time.Now()
+			if a.summaryViewDate == nil {
+				nextDate = nextDate.AddDate(0, 0, dateDelta)
+			} else {
+				nextDate = a.summaryViewDate.AddDate(0, 0, dateDelta)
+			}
+			a.summaryViewDate = &nextDate
+		}
 	}
 }
 
@@ -251,7 +272,12 @@ func formatTime(t *time.Time) string {
 	return t.Format("15:04:05")
 }
 func (a *application) redrawSummary() {
-	now := time.Now()
+	var now time.Time
+	if a.summaryViewDate != nil {
+		now = *a.summaryViewDate
+	} else {
+		now = time.Now()
+	}
 	a.drawText(a.area.XMin(), a.area.YMin(), fmt.Sprintf("Summary for %s", now.Format("2 Jan 2006")), termbox.ColorBlue|termbox.AttrBold, termbox.ColorDefault)
 	summary := a.db.GenerateDailySummary(now)
 	for idx, b := range summary.Bookings {
