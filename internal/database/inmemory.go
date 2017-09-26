@@ -44,7 +44,7 @@ func (d *InMemory) AddTask(t clocked.Task) error {
 		return fmt.Errorf("a task with this code already exists")
 	}
 	d.tasks = append(d.tasks, t)
-	d.taskmap[t.Code] = len(d.taskmap) - 1
+	d.taskmap[t.Code] = len(d.tasks) - 1
 	return nil
 }
 

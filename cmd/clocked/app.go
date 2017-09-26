@@ -130,6 +130,9 @@ func (a *application) handleNewTaskModeKey(evt termbox.Event) {
 
 func (a *application) handleSelectionModeKey(evt termbox.Event) {
 	switch evt.Key {
+	case termbox.KeyCtrlA:
+		a.clearFilter()
+		a.jumpToActiveTask()
 	case termbox.KeyBackspace:
 		a.popFilter()
 	case termbox.KeyBackspace2:
@@ -347,6 +350,15 @@ func (a *application) drawFieldValue(xOffset int, xOffsetEnd int, yOffset int, v
 	return xOffsetEnd
 }
 
+func (a *application) jumpToActiveTask() bool {
+	task, ok := a.db.ActiveTask()
+	if !ok {
+		return false
+	}
+	_, ok = a.taskListView.SelectItemByLabel(task.Label())
+	return ok
+}
+
 func (a *application) drawTaskLine(task *clocked.Task, xOffset, maxXOffset, yOffset int, isSelected bool, isActive bool) {
 	if isSelected {
 		termbox.SetCell(xOffset+1, yOffset, '>', termbox.ColorWhite|termbox.AttrBold, termbox.ColorDefault)
@@ -393,6 +405,12 @@ func appendRune(s string, r rune) string {
 
 func (a *application) pushFilter(c rune) {
 	a.filter = appendRune(a.filter, c)
+	a.updateTaskList()
+	a.selectFirstRow()
+}
+
+func (a *application) clearFilter() {
+	a.filter = ""
 	a.updateTaskList()
 	a.selectFirstRow()
 }

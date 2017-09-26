@@ -26,11 +26,22 @@ func NewScrollableList(area Area) *ScrollableList {
 	}
 }
 
+func (s *ScrollableList) SelectItemByLabel(l string) (int, bool) {
+	for idx, i := range s.items {
+		if i.Label() == l {
+			_, ok := s.SelectItemByIndex(idx)
+			return idx, ok
+		}
+	}
+	return -1, false
+}
+
 func (s *ScrollableList) SelectItemByIndex(i int) (ScrollableListItem, bool) {
 	if i >= len(s.items) {
 		return nil, false
 	}
 	s.selectedIndex = i
+	s.recalculateOffset()
 	return s.items[i], true
 }
 

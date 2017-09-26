@@ -30,3 +30,18 @@ func TestFiltering(t *testing.T) {
 	selected, ok = app.taskListView.SelectedItem()
 	require.False(t, ok, "Since there is no matching item, nothing should be selected")
 }
+
+func TestJumpToActiveTask(t *testing.T) {
+	app := newApplication()
+	app.db = database.NewInMemory()
+	app.db.AddTask(clocked.Task{Code: "a"})
+	app.db.AddTask(clocked.Task{Code: "b"})
+	app.taskListView = NewScrollableList(Area{})
+	app.updateTaskList()
+
+	require.NoError(t, app.db.ClockInto("b"), "Clocking into a should have worked")
+	app.jumpToActiveTask()
+	selected, ok := app.taskListView.SelectedItem()
+	require.True(t, ok, "A task should be selected")
+	require.Equal(t, "b ", selected.Label(), "b should be the selected item")
+}
