@@ -151,6 +151,9 @@ func (a *application) handleNewTaskModeKey(evt termbox.Event) {
 
 func (a *application) handleSelectionModeKey(evt termbox.Event) {
 	switch evt.Key {
+	case termbox.KeyCtrlN:
+		a.switchMode(newTaskMode)
+		a.form = generateNewTaskForm()
 	case termbox.KeyCtrlA:
 		a.clearFilter()
 		a.jumpToActiveTask()
@@ -181,11 +184,6 @@ func (a *application) handleSelectionModeKey(evt termbox.Event) {
 		}
 		a.clearFilter()
 	default:
-		if evt.Ch == 43 {
-			a.switchMode(newTaskMode)
-			a.form = generateNewTaskForm()
-			return
-		}
 		a.pushFilter(evt.Ch)
 	}
 }
