@@ -179,6 +179,7 @@ func (a *application) handleSelectionModeKey(evt termbox.Event) {
 			a.err = err
 			return
 		}
+		a.clearFilter()
 	default:
 		if evt.Ch == 43 {
 			a.switchMode(newTaskMode)
