@@ -16,6 +16,7 @@ const (
 	newTaskMode   = iota
 	selectionMode = iota
 	summaryMode   = iota
+	filterMode    = iota
 )
 
 type application struct {
@@ -89,6 +90,8 @@ func (a *application) handleKey(evt termbox.Event) bool {
 		a.handleNewTaskModeKey(evt)
 	case summaryMode:
 		a.handleSummaryModeKey(evt)
+	case filterMode:
+		a.handleFilterModeKey(evt)
 	}
 	return true
 }
@@ -97,6 +100,25 @@ func convertToTask(f *form.Form) clocked.Task {
 	return clocked.Task{
 		Code:  f.Value("code"),
 		Title: f.Value("title"),
+	}
+}
+
+func (a *application) handleFilterModeKey(evt termbox.Event) {
+	switch evt.Key {
+	case termbox.KeyEsc:
+		a.clearFilter()
+		a.switchMode(selectionMode)
+	case termbox.KeyCtrlG:
+		a.clearFilter()
+		a.switchMode(selectionMode)
+	case termbox.KeyEnter:
+		a.switchMode(selectionMode)
+	case termbox.KeyBackspace:
+		a.popFilter()
+	case termbox.KeyBackspace2:
+		a.popFilter()
+	default:
+		a.pushFilter(evt.Ch)
 	}
 }
 
@@ -150,23 +172,22 @@ func (a *application) handleNewTaskModeKey(evt termbox.Event) {
 }
 
 func (a *application) handleSelectionModeKey(evt termbox.Event) {
-	switch evt.Key {
-	case termbox.KeyCtrlN:
+	switch {
+	case evt.Key == termbox.KeyCtrlN || evt.Ch == 'n':
 		a.switchMode(newTaskMode)
 		a.form = generateNewTaskForm()
-	case termbox.KeyCtrlA:
+	case evt.Key == termbox.KeyCtrlA || evt.Ch == 'a':
 		a.clearFilter()
 		a.jumpToActiveTask()
-	case termbox.KeyBackspace:
-		a.popFilter()
-	case termbox.KeyBackspace2:
-		a.popFilter()
-	case termbox.KeyArrowDown:
+	case evt.Ch == 'g':
+		a.clearFilter()
+	case evt.Key == termbox.KeyCtrlF || evt.Ch == 'f':
+		a.switchMode(filterMode)
+	case evt.Key == termbox.KeyArrowDown || evt.Ch == 'j':
 		a.selectNextRow()
-	case termbox.KeyArrowUp:
+	case evt.Key == termbox.KeyArrowUp || evt.Ch == 'k':
 		a.selectPreviousRow()
-	case termbox.KeyTab:
-	case termbox.KeyEnter:
+	case evt.Key == termbox.KeyEnter:
 		selectedItem, selected := a.taskListView.SelectedItem()
 		if !selected {
 			return
@@ -184,7 +205,6 @@ func (a *application) handleSelectionModeKey(evt termbox.Event) {
 		}
 		a.clearFilter()
 	default:
-		a.pushFilter(evt.Ch)
 	}
 }
 
@@ -209,8 +229,8 @@ func (a *application) reset() {
 func (a *application) redrawFilter(xOffset, maxXOffset, yOffset int) {
 	yOffset = a.area.YMax()
 	a.drawLine(yOffset - 1)
-	xOffset = a.drawLabel(xOffset, yOffset, "Search:", false)
-	a.drawFieldValue(xOffset+1, maxXOffset, yOffset, a.filter, false)
+	xOffset = a.drawLabel(xOffset, yOffset, "Search:", a.mode == filterMode)
+	a.drawFieldValue(xOffset+1, maxXOffset, yOffset, a.filter, a.mode == filterMode)
 	a.filterLineHeight = 2
 }
 
@@ -249,17 +269,17 @@ func (a *application) updateTaskList() {
 func (a *application) redrawAll() {
 	a.reset()
 	yOffset := a.redrawError(2, 1)
-	switch a.mode {
-	case summaryMode:
+	switch {
+	case a.mode == summaryMode:
 		a.redrawSummary()
-	case selectionMode:
+	case a.mode == selectionMode || a.mode == filterMode:
 		a.redrawFilter(a.area.XMin(), a.area.Width, yOffset)
 		a.redrawActiveTask(a.area.XMin(), a.area.YMax()-3)
 		// TODO: Only update the task list on actual actions that change the
 		//       list of selected tasks.
 		a.recalculateDimensions()
 		a.taskListView.Render()
-	case newTaskMode:
+	case a.mode == newTaskMode:
 		a.redrawForm(a.area.XMin(), yOffset)
 	}
 	termbox.Flush()
