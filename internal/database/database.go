@@ -19,4 +19,5 @@ type Database interface {
 	AllTasks() ([]clocked.Task, error)
 	FilteredTasks(f string) ([]clocked.Task, error)
 	GenerateDailySummary(time.Time) Summary
+	Empty() bool
 }

@@ -11,7 +11,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/zerok/clocked"
-	"gopkg.in/v1/yaml"
+	"gopkg.in/yaml.v2"
 )
 
 const ActiveCodeFilename = "activeCode"
@@ -182,6 +182,10 @@ func (b ByStart) Less(i, j int) bool {
 		return false
 	}
 	return aStart.Before(*bStart)
+}
+
+func (d *FolderBasedDatabase) Empty() bool {
+	return d.taskIndex == nil || len(d.taskIndex) == 0
 }
 
 func (d *FolderBasedDatabase) GenerateDailySummary(t time.Time) Summary {

@@ -8,6 +8,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	termbox "github.com/nsf/termbox-go"
 	"github.com/zerok/clocked"
+	"github.com/zerok/clocked/internal/backup"
 	"github.com/zerok/clocked/internal/database"
 	"github.com/zerok/clocked/internal/form"
 )
@@ -23,6 +24,7 @@ type application struct {
 	summaryViewDate      *time.Time
 	log                  *logrus.Logger
 	form                 *form.Form
+	backup               *backup.Backup
 	err                  error
 	mode                 int
 	area                 Area
@@ -158,6 +160,11 @@ func (a *application) handleSummaryModeKey(evt termbox.Event) {
 	}
 }
 
+func (a *application) fatalError(err error, msg string, args ...interface{}) {
+	termbox.Close()
+	a.log.WithError(err).Fatalf(msg, args...)
+}
+
 func (a *application) handleNewTaskModeKey(evt termbox.Event) {
 	switch evt.Key {
 	case termbox.KeyEsc:
@@ -170,6 +177,11 @@ func (a *application) handleNewTaskModeKey(evt termbox.Event) {
 			if err := a.db.AddTask(t); err != nil {
 				a.err = err
 				break
+			}
+			if a.backup != nil {
+				if err := a.backup.CreateSnapshot(); err != nil {
+					a.fatalError(err, "failed to create snapshot")
+				}
 			}
 			a.log.Infof("%s added", t)
 			a.switchMode(selectionMode)
@@ -212,6 +224,11 @@ func (a *application) handleSelectionModeKey(evt termbox.Event) {
 		if err := a.db.ClockInto(selectedTask.Code); err != nil {
 			a.err = err
 			return
+		}
+		if a.backup != nil {
+			if err := a.backup.CreateSnapshot(); err != nil {
+				a.fatalError(err, "failed to create snapshot")
+			}
 		}
 		a.clearFilter()
 	default:

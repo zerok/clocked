@@ -52,6 +52,10 @@ func (d *InMemory) AllTasks() ([]clocked.Task, error) {
 	return d.tasks, nil
 }
 
+func (d *InMemory) Empty() bool {
+	return d.tasks == nil || len(d.tasks) == 0
+}
+
 func (d *InMemory) ClockInto(code string) error {
 	taskIdx, exists := d.taskmap[code]
 	if !exists {
