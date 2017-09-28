@@ -6,6 +6,8 @@ import (
 	"github.com/nsf/termbox-go"
 )
 
+type ItemMatcherFunc func(ScrollableListItem) bool
+
 type ScrollableListItem interface {
 	Label() string
 }
@@ -43,6 +45,16 @@ func (s *ScrollableList) SelectItemByIndex(i int) (ScrollableListItem, bool) {
 	s.selectedIndex = i
 	s.recalculateOffset()
 	return s.items[i], true
+}
+
+func (s *ScrollableList) SelectMatchingItem(matcher ItemMatcherFunc) (int, bool) {
+	for idx, item := range s.items {
+		if matcher(item) {
+			_, selected := s.SelectItemByIndex(idx)
+			return idx, selected
+		}
+	}
+	return -1, false
 }
 
 func (s *ScrollableList) drawWindow() {

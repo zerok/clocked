@@ -32,10 +32,19 @@ type application struct {
 	focusedField         string
 	taskListView         *ScrollableList
 	db                   database.Database
-	selectedTaskCode     string
 	numRows              int
 	filter               string
 	visibleTaskCodes     []string
+}
+
+func selectByCode(code string) ItemMatcherFunc {
+	return func(i ScrollableListItem) bool {
+		task, ok := i.(clocked.Task)
+		if !ok {
+			return false
+		}
+		return task.Code == code
+	}
 }
 
 func newApplication() *application {
@@ -164,7 +173,8 @@ func (a *application) handleNewTaskModeKey(evt termbox.Event) {
 			}
 			a.log.Infof("%s added", t)
 			a.switchMode(selectionMode)
-			a.selectedTaskCode = t.Code
+			a.updateTaskList()
+			a.taskListView.SelectMatchingItem(selectByCode(t.Code))
 		}
 	default:
 		a.handleFieldInput(evt)
@@ -422,15 +432,6 @@ func (a *application) drawTaskLine(task *clocked.Task, xOffset, maxXOffset, yOff
 
 	xOffset = a.drawText(xOffset+1, yOffset, task.Code, fg, termbox.ColorDefault)
 	a.drawLabel(xOffset+1, yOffset, task.Title, isSelected)
-}
-
-func (a *application) getCurrentTaskCodeIndex() int {
-	for idx, code := range a.visibleTaskCodes {
-		if code == a.selectedTaskCode {
-			return idx
-		}
-	}
-	return -1
 }
 
 func (a *application) selectFirstRow() {
