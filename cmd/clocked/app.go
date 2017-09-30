@@ -324,7 +324,7 @@ func (a *application) redrawSummary() {
 	} else {
 		now = time.Now()
 	}
-	a.drawText(a.area.XMin(), a.area.YMin(), fmt.Sprintf("Summary for %s", now.Format("2 Jan 2006")), termbox.ColorBlue|termbox.AttrBold, termbox.ColorDefault)
+	a.drawText(a.area.XMin(), a.area.YMin(), fmt.Sprintf("Summary for %s", now.Format("Mon, 2 Jan 2006")), termbox.ColorBlue|termbox.AttrBold, termbox.ColorDefault)
 	summary := a.db.GenerateDailySummary(now)
 	for idx, b := range summary.Bookings {
 		a.drawText(a.area.XMin(), a.area.YMin()+1+idx, fmt.Sprintf("%s - %s (%s)", formatTime(b.Start), formatTime(b.Stop), b.Code), termbox.ColorDefault, termbox.ColorDefault)
