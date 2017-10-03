@@ -38,10 +38,14 @@ func (f *Form) Previous() {
 }
 
 func (f *Form) IsFocused(code string) bool {
-	if f.focusedField == -1 {
-		return false
+	return f.FocusedField() == code
+}
+
+func (f *Form) FocusedField() string {
+	if f.focusedField == -1 || f.focusedField > len(f.fields)-1 {
+		return ""
 	}
-	return f.fields[f.focusedField].Code == code
+	return f.fields[f.focusedField].Code
 }
 
 func (f *Form) IsValid() bool {

@@ -1,13 +1,13 @@
 package jira
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -27,16 +27,23 @@ func NewClient(baseURL, username, password string) *Client {
 }
 
 func (c *Client) AddWorklog(ctx context.Context, taskID string, start time.Time, dur time.Duration) error {
-	u := fmt.Sprintf("%s/rest/tempo-rest/1.0/worklogs/%s", c.baseURL, taskID)
+	u := fmt.Sprintf("%s/rest/api/2/issue/%s/worklog", c.baseURL, taskID)
+	fmt.Println(u)
 	h := http.Client{}
-	form := url.Values{}
-	form.Set("ansidate", start.Format("2006-01-02"))
-	form.Set("ansienddate", start.Add(dur).Format("2006-01-02"))
-	req, err := http.NewRequest(http.MethodPost, u, strings.NewReader(form.Encode()))
+	var body bytes.Buffer
+	if err := json.NewEncoder(&body).Encode(WorklogCreation{
+		Started:          start.Format(time.RFC3339),
+		TimeSpentSeconds: int64(dur.Seconds()),
+		Comment:          fmt.Sprintf("Working on %s", taskID),
+	}); err != nil {
+		return err
+	}
+	req, err := http.NewRequest(http.MethodPost, u, &body)
 	if err != nil {
 		return err
 	}
 	req.SetBasicAuth(c.username, c.password)
+	req.Header.Set("Content-type", "application/json")
 	resp, err := h.Do(req.WithContext(ctx))
 	if err != nil {
 		return err

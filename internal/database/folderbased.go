@@ -17,6 +17,13 @@ import (
 const ActiveCodeFilename = "activeCode"
 const TasksFolder = "tasks"
 
+const (
+	_ = iota
+	SubmissionStatusOK
+	SubmissionStatusSkipped
+	SubmissionStatusFailed
+)
+
 type FolderBasedDatabase struct {
 	taskIndex     []clocked.Task
 	taskCodeIndex map[string]struct{}
@@ -155,9 +162,17 @@ type Summary struct {
 }
 
 type TaskBooking struct {
-	Code  string
-	Start *time.Time
-	Stop  *time.Time
+	Code             string
+	Start            *time.Time
+	Stop             *time.Time
+	SubmissionStatus int
+}
+
+func (b *TaskBooking) Duration() time.Duration {
+	if b.Start == nil || b.Stop == nil {
+		return 0
+	}
+	return b.Stop.Sub(*b.Start)
 }
 
 type ByStart []TaskBooking

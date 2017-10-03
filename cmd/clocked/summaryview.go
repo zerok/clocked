@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -15,6 +16,7 @@ type summaryView struct {
 	app     *application
 	date    *time.Time
 	summary database.Summary
+	area    Area
 }
 
 func (v *summaryView) Render(area Area) error {
@@ -24,10 +26,27 @@ func (v *summaryView) Render(area Area) error {
 	} else {
 		now = time.Now()
 	}
-	v.app.drawText(area.XMin(), area.YMin(), fmt.Sprintf("Summary for %s", now.Format("Mon, 2 Jan 2006")), termbox.ColorBlue|termbox.AttrBold, termbox.ColorDefault)
+	v.date = &now
+	v.area = area
 	v.summary = v.app.db.GenerateDailySummary(now)
+	v.renderSummary()
+	return nil
+}
+
+func (v *summaryView) renderSummary() {
+	area := v.area
+	v.app.drawText(area.XMin(), area.YMin(), fmt.Sprintf("Summary for %s", v.date.Format("Mon, 2 Jan 2006")), termbox.ColorBlue|termbox.AttrBold, termbox.ColorDefault)
 	for idx, b := range v.summary.Bookings {
-		v.app.drawText(area.XMin(), area.YMin()+1+idx, fmt.Sprintf("%s - %s (%s)", formatTime(b.Start), formatTime(b.Stop), b.Code), termbox.ColorDefault, termbox.ColorDefault)
+		var color termbox.Attribute
+		switch b.SubmissionStatus {
+		case database.SubmissionStatusOK:
+			color = termbox.ColorGreen
+		case database.SubmissionStatusSkipped:
+			color = termbox.ColorYellow
+		default:
+			color = termbox.ColorDefault
+		}
+		v.app.drawText(area.XMin(), area.YMin()+1+idx, fmt.Sprintf("%s - %s (%s)", formatTime(b.Start), formatTime(b.Stop), b.Code), color, termbox.ColorDefault)
 	}
 
 	idx := 0
@@ -38,7 +57,6 @@ func (v *summaryView) Render(area Area) error {
 	idx++
 	v.app.drawText(area.XMin()+area.Width/2, area.YMin()+1+idx, "Total: ", termbox.ColorDefault|termbox.AttrBold, termbox.ColorDefault)
 	v.app.drawText(area.XMin()+area.Width/2+7, area.YMin()+1+idx, v.summary.Total.String(), termbox.ColorDefault, termbox.ColorDefault)
-	return nil
 }
 
 func (v *summaryView) HandleKeyEvent(evt termbox.Event) error {
@@ -48,12 +66,20 @@ func (v *summaryView) HandleKeyEvent(evt termbox.Event) error {
 		v.date = nil
 	case termbox.KeyCtrlJ:
 		if v.app.jiraClient != nil {
-			for _, b := range v.summary.Bookings {
+			for idx, b := range v.summary.Bookings {
 				if b.Stop != nil {
+					if strings.HasPrefix(b.Code, "NTI-") {
+						v.app.log.Infof("Skipping %s", b.Code)
+						(&v.summary.Bookings[idx]).SubmissionStatus = database.SubmissionStatusSkipped
+						continue
+					}
 					if err := v.app.jiraClient.AddWorklog(context.Background(), b.Code, *b.Start, b.Duration()); err != nil {
 						v.app.err = err
 						return err
 					}
+					(&v.summary.Bookings[idx]).SubmissionStatus = database.SubmissionStatusOK
+					v.renderSummary()
+					termbox.Flush()
 				}
 			}
 		} else {

@@ -48,7 +48,7 @@ func (v *tasklistView) Render(area Area) error {
 	if err := v.recalculateListDimensions(area); err != nil {
 		return err
 	}
-	if err := v.renderList(area); err != nil {
+	if err := v.renderList(); err != nil {
 		return err
 	}
 	return nil
@@ -108,7 +108,7 @@ func (v *tasklistView) selectPreviousRow() {
 	v.list.Previous()
 }
 
-func (v *tasklistView) renderList(area Area) error {
+func (v *tasklistView) renderList() error {
 	v.list.Render()
 	return nil
 }
@@ -157,7 +157,6 @@ func (v *tasklistView) HandleKeyEvent(evt termbox.Event) error {
 		v.pushFilter(evt.Ch)
 	case evt.Key == termbox.KeyCtrlN || evt.Ch == 'n':
 		a.switchMode(newTaskMode)
-		v.app.form = generateNewTaskForm()
 	case evt.Key == termbox.KeyCtrlA || evt.Ch == 'a':
 		v.clearFilter()
 		v.jumpToActiveTask()

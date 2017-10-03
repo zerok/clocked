@@ -8,23 +8,10 @@ import (
 	termbox "github.com/nsf/termbox-go"
 	"github.com/ogier/pflag"
 	"github.com/zerok/clocked/internal/backup"
+	"github.com/zerok/clocked/internal/config"
 	"github.com/zerok/clocked/internal/database"
-	"github.com/zerok/clocked/internal/form"
+	"github.com/zerok/clocked/internal/jira"
 )
-
-func generateNewTaskForm() *form.Form {
-	return form.NewForm([]form.Field{
-		{
-			Code:       "code",
-			Label:      "Code:",
-			IsRequired: true,
-		}, {
-			Code:       "title",
-			Label:      "Title:",
-			IsRequired: true,
-		},
-	})
-}
 
 func main() {
 	log := logrus.New()
@@ -43,6 +30,11 @@ func main() {
 
 	if verbose {
 		log.SetLevel(logrus.DebugLevel)
+	}
+
+	cfg, err := config.Load(filepath.Join(storageFolder, "config.yml"))
+	if err != nil {
+		log.WithError(err).Fatalf("Failed to load configuration file")
 	}
 
 	db, err := database.NewDatabase(storageFolder, log)
@@ -76,6 +68,9 @@ func main() {
 	app.backup = bk
 	app.db = db
 	app.log = log
+	if cfg.JIRAURL != "" && cfg.JIRAPassword != "" && cfg.JIRAUsername != "" {
+		app.jiraClient = jira.NewClient(cfg.JIRAURL, cfg.JIRAUsername, cfg.JIRAPassword)
+	}
 
 	err = termbox.Init()
 	if err != nil {
@@ -83,6 +78,5 @@ func main() {
 	}
 	defer termbox.Close()
 	app.handleResize()
-	app.mode = selectionMode
 	app.start()
 }

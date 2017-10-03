@@ -11,6 +11,9 @@ type View interface {
 	Render(Area) error
 }
 
+// Focusable is a view that offers a special method being called before
+// it is being rendered. This way you can initialize things like scroll
+// views or resize then.
 type Focusable interface {
 	BeforeFocus() error
 }
