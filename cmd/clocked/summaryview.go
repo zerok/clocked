@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/nsf/termbox-go"
@@ -20,22 +18,21 @@ type summaryView struct {
 }
 
 func (v *summaryView) Render(area Area) error {
-	var now time.Time
-	if v.date != nil {
-		now = *v.date
-	} else {
-		now = time.Now()
-	}
-	v.date = &now
 	v.area = area
-	v.summary = v.app.db.GenerateDailySummary(now)
+	v.summary = v.app.db.GenerateDailySummary(*v.date)
 	v.renderSummary()
+	return nil
+}
+
+func (v *summaryView) BeforeFocus() error {
+	now := time.Now()
+	v.date = &now
 	return nil
 }
 
 func (v *summaryView) renderSummary() {
 	area := v.area
-	v.app.drawText(area.XMin(), area.YMin(), fmt.Sprintf("Summary for %s", v.date.Format("Mon, 2 Jan 2006")), termbox.ColorBlue|termbox.AttrBold, termbox.ColorDefault)
+	v.app.drawHeadline(area.XMin(), area.YMin(), fmt.Sprintf("Summary for %s", v.date.Format("Mon, 2 Jan 2006")))
 	for idx, b := range v.summary.Bookings {
 		var color termbox.Attribute
 		switch b.SubmissionStatus {
@@ -66,22 +63,10 @@ func (v *summaryView) HandleKeyEvent(evt termbox.Event) error {
 		v.date = nil
 	case termbox.KeyCtrlJ:
 		if v.app.jiraClient != nil {
-			for idx, b := range v.summary.Bookings {
-				if b.Stop != nil {
-					if strings.HasPrefix(b.Code, "NTI-") {
-						v.app.log.Infof("Skipping %s", b.Code)
-						(&v.summary.Bookings[idx]).SubmissionStatus = database.SubmissionStatusSkipped
-						continue
-					}
-					if err := v.app.jiraClient.AddWorklog(context.Background(), b.Code, *b.Start, b.Duration()); err != nil {
-						v.app.err = err
-						return err
-					}
-					(&v.summary.Bookings[idx]).SubmissionStatus = database.SubmissionStatusOK
-					v.renderSummary()
-					termbox.Flush()
-				}
+			if view, ok := v.app.views[syncMode].(*syncView); ok {
+				view.SetSummary(*v.date, v.summary)
 			}
+			v.app.switchMode(syncMode)
 		} else {
 			v.app.err = fmt.Errorf("JIRA not configured")
 		}

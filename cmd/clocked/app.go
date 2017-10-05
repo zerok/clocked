@@ -19,10 +19,12 @@ const (
 	selectionMode = iota
 	summaryMode   = iota
 	filterMode    = iota
+	syncMode      = iota
 )
 
 type application struct {
 	summaryViewDate      *time.Time
+	termLog              *logrus.Logger
 	log                  *logrus.Logger
 	form                 *form.Form
 	backup               *backup.Backup
@@ -53,13 +55,16 @@ func selectByCode(code string) ItemMatcherFunc {
 }
 
 func newApplication() *application {
-	a := &application{}
+	a := &application{
+		termLog: logrus.New(),
+	}
 	a.views = map[int]View{
 		summaryMode: &summaryView{
 			app: a,
 		},
 		selectionMode: newTasklistView(a),
 		newTaskMode:   newCreateTaskView(a),
+		syncMode:      newSyncView(a),
 	}
 	return a
 }
@@ -117,6 +122,10 @@ func convertToTask(f *form.Form) clocked.Task {
 func (a *application) fatalError(err error, msg string, args ...interface{}) {
 	termbox.Close()
 	a.log.WithError(err).Fatalf(msg, args...)
+}
+
+func (a *application) drawHeadline(x, y int, text string) {
+	a.drawText(x, y, text, termbox.ColorBlue|termbox.AttrBold, termbox.ColorDefault)
 }
 
 func (a *application) handleFieldInput(frm *form.Form, evt termbox.Event) {
