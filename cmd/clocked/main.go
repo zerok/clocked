@@ -1,12 +1,13 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/Sirupsen/logrus"
 	termbox "github.com/nsf/termbox-go"
-	"github.com/ogier/pflag"
+	"github.com/spf13/pflag"
 	"github.com/zerok/clocked/internal/backup"
 	"github.com/zerok/clocked/internal/config"
 	"github.com/zerok/clocked/internal/database"
@@ -14,19 +15,26 @@ import (
 )
 
 func main() {
-	log := logrus.New()
-	fp, err := os.OpenFile("clocked.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to open logfile")
-	}
-	defer fp.Close()
-	log.Out = fp
-
 	var verbose bool
 	var storageFolder string
+	var logFile string
 	pflag.BoolVar(&verbose, "verbose", false, "Verbose logging")
+	pflag.StringVar(&logFile, "log-file", "", "Path to a logfile")
 	pflag.StringVar(&storageFolder, "store", filepath.Join(os.Getenv("HOME"), ".clocked"), "Path where clocked will store its data")
 	pflag.Parse()
+
+	log := logrus.New()
+	if logFile != "" {
+		fp, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0600)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to open logfile")
+		}
+		defer fp.Close()
+		log.Out = fp
+	} else {
+		log.SetLevel(logrus.FatalLevel)
+		log.Out = ioutil.Discard
+	}
 
 	if verbose {
 		log.SetLevel(logrus.DebugLevel)

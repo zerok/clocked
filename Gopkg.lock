@@ -8,10 +8,22 @@
   version = "v1.0.3"
 
 [[projects]]
+  name = "github.com/bgentry/speakeasy"
+  packages = ["."]
+  revision = "4aabc24848ce5fd31929f7d1e4ea74d3709c14cd"
+  version = "v0.1.0"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/keybase/go-keychain"
+  packages = ["."]
+  revision = "ea111bd9eaa41fcf8f0c877304cf6b32cab505ca"
 
 [[projects]]
   name = "github.com/mattn/go-runewidth"
@@ -26,10 +38,10 @@
   revision = "4ed959e0540971545eddb8c75514973d670cf739"
 
 [[projects]]
-  name = "github.com/ogier/pflag"
+  name = "github.com/pkg/errors"
   packages = ["."]
-  revision = "32a05c62658bd1d7c7e75cbc8195de5d585fde0f"
-  version = "v0.0.1"
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -42,6 +54,12 @@
   packages = ["."]
   revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
+  version = "v1.0.0"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -70,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "75b203002df23f698fe9f678d51bc6f74a30e91b28a5d8031589ac7b2d5ae30c"
+  inputs-digest = "8525802043be2fae28a4e322c0f9ddc55b75b37e39ada696663c322325fae3ec"
   solver-name = "gps-cdcl"
   solver-version = 1

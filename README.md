@@ -1,5 +1,10 @@
 # Clocked: A simple time-tracker
 
+## Command-line arguments
+
+- `--log-file <path/to/file>` specifies a path to a logfile clocked should
+  write to.
+
 ## Features
 
 - JIRA Tempo export
