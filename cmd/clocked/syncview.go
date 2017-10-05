@@ -41,7 +41,7 @@ func (v *syncView) Render(area Area) error {
 }
 
 func (v *syncView) renderListing() {
-	v.app.drawHeadline(v.area.XMin(), v.area.YMin(), "Sychronizing with JIRA")
+	v.app.drawHeadline(v.area.XMin(), v.area.YMin(), fmt.Sprintf("Sychronizing tasks for %s with JIRA", v.date.Format("Mon, 2 Jan 2006")))
 	var maxStatusLength int
 	for _, s := range v.syncStatus {
 		if len(s) > maxStatusLength {
@@ -55,7 +55,7 @@ func (v *syncView) renderListing() {
 
 func (v *syncView) HandleKeyEvent(evt termbox.Event) error {
 	switch {
-	case evt.Ch == 'q':
+	case evt.Ch == 'q' || evt.Key == termbox.KeyEsc:
 		v.app.switchMode(summaryMode)
 	case evt.Ch == 's':
 		termbox.Close()

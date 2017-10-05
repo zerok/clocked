@@ -57,11 +57,11 @@ func (v *summaryView) renderSummary() {
 }
 
 func (v *summaryView) HandleKeyEvent(evt termbox.Event) error {
-	switch evt.Key {
-	case termbox.KeyEsc:
+	switch {
+	case evt.Key == termbox.KeyEsc || evt.Ch == 'q':
 		v.app.switchMode(selectionMode)
 		v.date = nil
-	case termbox.KeyCtrlJ:
+	case evt.Key == termbox.KeyCtrlJ:
 		if v.app.jiraClient != nil {
 			if view, ok := v.app.views[syncMode].(*syncView); ok {
 				view.SetSummary(*v.date, v.summary)
