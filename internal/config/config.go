@@ -2,6 +2,7 @@ package config
 
 import (
 	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
@@ -16,6 +17,9 @@ func Load(path string) (*Config, error) {
 	var c Config
 	raw, err := ioutil.ReadFile(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return &c, nil
+		}
 		return nil, err
 	}
 	if err := yaml.Unmarshal(raw, &c); err != nil {

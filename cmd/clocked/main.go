@@ -31,13 +31,14 @@ func main() {
 		}
 		defer fp.Close()
 		log.Out = fp
-	} else {
-		log.SetLevel(logrus.FatalLevel)
-		log.Out = ioutil.Discard
 	}
 
 	if verbose {
 		log.SetLevel(logrus.DebugLevel)
+	}
+
+	if err := ensureStorageFolder(storageFolder); err != nil {
+		log.WithError(err).Fatalf("Failed to create storage folder %s", storageFolder)
 	}
 
 	cfg, err := config.Load(filepath.Join(storageFolder, "config.yml"))
@@ -47,7 +48,7 @@ func main() {
 
 	db, err := database.NewDatabase(storageFolder, log)
 	if err != nil {
-		log.WithError(err).Fatalf("Failed to load databse from %s", storageFolder)
+		log.WithError(err).Fatalf("Failed to load database from %s", storageFolder)
 	}
 	if err := db.LoadState(); err != nil {
 		log.WithError(err).Fatalf("Failed to load database")
@@ -80,6 +81,11 @@ func main() {
 		app.jiraClient = jira.NewClient(cfg.JIRAURL, cfg.JIRAUsername, cfg.JIRAPassword)
 	}
 
+	if logFile == "" {
+		log.SetLevel(logrus.FatalLevel)
+		log.Out = ioutil.Discard
+	}
+
 	err = termbox.Init()
 	if err != nil {
 		log.WithError(err).Fatal("Failed to initialize application")
@@ -87,4 +93,8 @@ func main() {
 	defer termbox.Close()
 	app.handleResize()
 	app.start()
+}
+
+func ensureStorageFolder(storageFolder string) error {
+	return os.MkdirAll(storageFolder, 0700)
 }

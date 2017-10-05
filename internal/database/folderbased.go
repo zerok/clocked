@@ -109,7 +109,11 @@ func (d *FolderBasedDatabase) loadTask(path string) (*clocked.Task, error) {
 }
 
 func (d *FolderBasedDatabase) saveTask(tsk *clocked.Task) error {
-	path := filepath.Join(d.rootFolder, "tasks", fmt.Sprintf("%s.yml", tsk.Code))
+	tasksFolder := filepath.Join(d.rootFolder, "tasks")
+	if err := os.MkdirAll(tasksFolder, 0700); err != nil {
+		return err
+	}
+	path := filepath.Join(tasksFolder, fmt.Sprintf("%s.yml", tsk.Code))
 	data, err := yaml.Marshal(tsk)
 	if err != nil {
 		return err
