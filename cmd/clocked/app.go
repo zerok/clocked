@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -173,13 +174,71 @@ func (a *application) drawText(xOffset, yOffset int, text string, fg, bg termbox
 	return xOffset + drawnChars
 }
 
+func (a *application) drawKeyMapping(area Area, mapping []KeyMap) int {
+	if len(mapping) == 0 {
+		return 0
+	}
+	max := 0
+	xOffset := area.XMin()
+	maxX := area.XMax()
+	line := 0
+	lines := make([][]KeyMap, 0, 1)
+	lines = append(lines, []KeyMap{})
+	margin := 3
+
+	for _, m := range mapping {
+		if l := len(m.Key) + len(m.Label); l > max {
+			max = l
+		}
+	}
+
+	for _, m := range mapping {
+		padding := max + 2 - len(m.Key) - len(m.Label)
+		s := fmt.Sprintf("[%s]%s%s", m.Key, strings.Repeat(" ", padding), m.Label)
+		l := len(s)
+		currentMargin := 0
+		if len(lines[line]) > 0 {
+			currentMargin = margin
+		}
+		if currentMargin+xOffset+l > maxX {
+			xOffset = 0
+			line++
+			lines = append(lines, []KeyMap{})
+			currentMargin = 0
+		}
+		lines[line] = append(lines[line], m)
+		xOffset += currentMargin + l
+	}
+
+	a.drawLine(area.YMax() - len(lines))
+	for idx, l := range lines {
+		xOffset := area.XMin()
+		yOffset := area.YMax() - len(lines) + idx + 1
+		for cellIdx, m := range l {
+			if cellIdx > 0 {
+				xOffset += margin
+			}
+			padding := max + 2 - len(m.Key) - len(m.Label)
+			xOffset = a.drawText(xOffset, yOffset, fmt.Sprintf("[%s]%s", m.Key, strings.Repeat(" ", padding)), termbox.AttrBold|termbox.ColorWhite, termbox.ColorBlack)
+			xOffset = a.drawText(xOffset, yOffset, m.Label, termbox.ColorWhite, termbox.ColorBlack)
+		}
+	}
+
+	return 1 + len(lines)
+}
+
 func (a *application) redrawAll() {
 	a.reset()
 	yOffset := a.redrawError(2, 1)
-	contentArea := Area(a.area)
-	contentArea.Y = yOffset
 
 	if a.activeView != nil {
+		contentArea := Area(a.area)
+		contentArea.Y = yOffset
+
+		if km, ok := a.activeView.(Keymapper); ok {
+			contentArea.Height -= a.drawKeyMapping(contentArea, km.KeyMapping())
+		}
+
 		a.activeView.Render(contentArea)
 	}
 

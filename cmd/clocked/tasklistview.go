@@ -16,6 +16,27 @@ type tasklistView struct {
 	filterFocused        bool
 }
 
+func (v *tasklistView) KeyMapping() []KeyMap {
+	if v.filterFocused {
+		return []KeyMap{
+			{Label: "Quit", Key: "^c"},
+			{Label: "Apply", Key: "ENTER"},
+			{Label: "Cancel", Key: "ESC"},
+		}
+	}
+	result := make([]KeyMap, 0, 7)
+	result = append(result, KeyMap{Label: "Quit", Key: "^c"})
+	if v.list.selectedIndex >= 0 {
+		result = append(result, KeyMap{Label: "Clock in/out", Key: "ENTER"})
+	}
+	result = append(result, KeyMap{Label: "Create task", Key: "n"})
+	result = append(result, KeyMap{Label: "Down", Key: "j"})
+	result = append(result, KeyMap{Label: "Up", Key: "k"})
+	result = append(result, KeyMap{Label: "Filter", Key: "f"})
+	result = append(result, KeyMap{Label: "Daily summary", Key: "^s"})
+	return result
+}
+
 func (v *tasklistView) BeforeFocus() error {
 	v.updateTaskList()
 	return nil

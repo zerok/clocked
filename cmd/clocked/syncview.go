@@ -24,6 +24,14 @@ func newSyncView(app *application) *syncView {
 	}
 }
 
+func (v *syncView) KeyMapping() []KeyMap {
+	return []KeyMap{
+		{Label: "Quit", Key: "^c"},
+		{Label: "Start", Key: "^s"},
+		{Label: "Cancel", Key: "q/ESC"},
+	}
+}
+
 func (v *syncView) SetSummary(date time.Time, summary database.Summary) {
 	v.summary = summary
 	v.date = date

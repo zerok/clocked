@@ -30,6 +30,15 @@ func newCreateTaskView(app *application) *createTaskView {
 	}
 }
 
+func (v *createTaskView) KeyMapping() []KeyMap {
+	return []KeyMap{
+		{Label: "Quit", Key: "^c"},
+		{Label: "Switch field", Key: "TAB"},
+		{Label: "Create task", Key: "ENTER"},
+		{Label: "Cancel", Key: "ESC"},
+	}
+}
+
 func (v *createTaskView) BeforeFocus() error {
 	v.form = newCreateTaskForm()
 	return nil

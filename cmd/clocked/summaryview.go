@@ -17,6 +17,14 @@ type summaryView struct {
 	area    Area
 }
 
+func (v *summaryView) KeyMapping() []KeyMap {
+	return []KeyMap{
+		{Label: "Quit", Key: "^c"},
+		{Label: "Task list", Key: "q/ESC"},
+		{Label: "JIRA sync", Key: "^j"},
+	}
+}
+
 func (v *summaryView) Render(area Area) error {
 	v.area = area
 	v.summary = v.app.db.GenerateDailySummary(*v.date)
