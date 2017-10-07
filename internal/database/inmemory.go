@@ -48,6 +48,10 @@ func (d *InMemory) AddTask(t clocked.Task) error {
 	return nil
 }
 
+func (d *InMemory) UpdateTask(oldCode string, task clocked.Task) error {
+	return fmt.Errorf("not implemented")
+}
+
 func (d *InMemory) AllTasks() ([]clocked.Task, error) {
 	return d.tasks, nil
 }

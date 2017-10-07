@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/nsf/termbox-go"
+	"github.com/zerok/clocked"
 )
 
 type View interface {
@@ -28,6 +29,10 @@ type Keymapper interface {
 type KeyMap struct {
 	Key   string
 	Label string
+}
+
+type TaskCentricView interface {
+	SetTask(clocked.Task)
 }
 
 // ErrCloseView can be returned by either Render or HandleKeyEvent in order

@@ -21,6 +21,7 @@ const (
 	summaryMode   = iota
 	filterMode    = iota
 	syncMode      = iota
+	editTaskMode  = iota
 )
 
 type application struct {
@@ -66,6 +67,7 @@ func newApplication() *application {
 		selectionMode: newTasklistView(a),
 		newTaskMode:   newCreateTaskView(a),
 		syncMode:      newSyncView(a),
+		editTaskMode:  newEditTaskView(a),
 	}
 	return a
 }
@@ -117,6 +119,7 @@ func convertToTask(f *form.Form) clocked.Task {
 	return clocked.Task{
 		Code:  f.Value("code"),
 		Title: f.Value("title"),
+		Tags:  strings.Split(f.Value("tags"), " "),
 	}
 }
 
@@ -147,8 +150,18 @@ func (a *application) handleFieldInput(frm *form.Form, evt termbox.Event) {
 	frm.SetValue(focusedField, v)
 }
 
+func (a *application) selectTask(task clocked.Task) {
+	if a.activeView == nil {
+		return
+	}
+	if tcv, ok := a.activeView.(TaskCentricView); ok {
+		tcv.SetTask(task)
+	}
+}
+
 func (a *application) reset() {
 	termbox.Clear(termbox.ColorWhite, termbox.ColorDefault)
+	termbox.HideCursor()
 }
 
 func (a *application) drawLabel(xOffset, yOffset int, text string, focused bool) int {
@@ -280,7 +293,11 @@ func (a *application) redrawForm(area Area, frm *form.Form) {
 
 	yOffset = area.YMin() + 1
 	for _, fld := range frm.Fields() {
-		a.drawFieldValue(inputStartOffset, area.Width-2, yOffset, fld.Value, fld.Code == a.focusedField)
+		isFocused := frm.IsFocused(fld.Code)
+		a.drawFieldValue(inputStartOffset, area.Width-2, yOffset, fld.Value, isFocused)
+		if isFocused {
+			termbox.SetCursor(inputStartOffset+len(fld.Value)+1, yOffset)
+		}
 		a.drawError(inputStartOffset, yOffset+1, fld.Error)
 		yOffset += 3
 	}

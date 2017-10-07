@@ -14,6 +14,7 @@ type Database interface {
 	ActiveTask() (clocked.Task, bool)
 	LoadState() error
 	AddTask(clocked.Task) error
+	UpdateTask(string, clocked.Task) error
 	ClockInto(code string) error
 	ClockOutOf(code string) error
 	AllTasks() ([]clocked.Task, error)

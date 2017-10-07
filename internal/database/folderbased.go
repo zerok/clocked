@@ -133,6 +133,45 @@ func (d *FolderBasedDatabase) AddTask(t clocked.Task) error {
 	return d.saveTask(&t)
 }
 
+func (d *FolderBasedDatabase) deleteTaskByCode(code string) error {
+	delete(d.taskCodeIndex, code)
+	return os.Remove(filepath.Join(d.rootFolder, "tasks", fmt.Sprintf("%s.yml", code)))
+}
+
+func (d *FolderBasedDatabase) UpdateTask(oldCode string, task clocked.Task) error {
+	// If the code changes, make sure that the new code isn't already taken.
+	if oldCode != task.Code {
+		if _, exists := d.taskCodeIndex[task.Code]; exists {
+			return fmt.Errorf("a task with this code already exists in the database.")
+		}
+	}
+
+	for idx, t := range d.taskIndex {
+		if t.Code == oldCode {
+			task.Bookings = t.Bookings
+			if err := d.saveTask(&task); err != nil {
+				return err
+			}
+			d.taskIndex[idx] = task
+			d.taskCodeIndex[task.Code] = struct{}{}
+
+			if oldCode != task.Code {
+				if err := d.deleteTaskByCode(oldCode); err != nil {
+					return err
+				}
+				if d.ActiveCode() == oldCode {
+					if err := d.setActiveCode(task.Code); err != nil {
+						return err
+					}
+				}
+			}
+			break
+		}
+	}
+
+	return nil
+}
+
 func (d *FolderBasedDatabase) ClockInto(code string) error {
 	// If another task is active, clock out of that first
 	if d.activeCode != "" {

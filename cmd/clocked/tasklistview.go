@@ -28,6 +28,7 @@ func (v *tasklistView) KeyMapping() []KeyMap {
 	result = append(result, KeyMap{Label: "Quit", Key: "^c"})
 	if v.list.selectedIndex >= 0 {
 		result = append(result, KeyMap{Label: "Clock in/out", Key: "ENTER"})
+		result = append(result, KeyMap{Label: "Edit task", Key: "e"})
 	}
 	result = append(result, KeyMap{Label: "Create task", Key: "n"})
 	result = append(result, KeyMap{Label: "Down", Key: "j"})
@@ -113,6 +114,9 @@ func (v *tasklistView) renderFilter(area Area) error {
 	a.drawLine(yOffset - 1)
 	xOffset := a.drawLabel(area.XMin(), yOffset, "Search:", v.filterFocused)
 	a.drawFieldValue(xOffset+1, area.XMax(), yOffset, v.filter, v.filterFocused)
+	if v.filterFocused {
+		termbox.SetCursor(xOffset+len(v.filter)+2, yOffset)
+	}
 	v.filterLineHeight = 2
 	return nil
 }
@@ -189,6 +193,14 @@ func (v *tasklistView) HandleKeyEvent(evt termbox.Event) error {
 		v.selectNextRow()
 	case evt.Key == termbox.KeyArrowUp || evt.Ch == 'k':
 		v.selectPreviousRow()
+	case evt.Ch == 'e':
+		selectedItem, selected := v.list.SelectedItem()
+		if !selected {
+			return nil
+		}
+		selectedTask := selectedItem.(clocked.Task)
+		a.switchMode(editTaskMode)
+		a.selectTask(selectedTask)
 	case evt.Key == termbox.KeyEnter:
 		selectedItem, selected := v.list.SelectedItem()
 		if !selected {
