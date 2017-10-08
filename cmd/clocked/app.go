@@ -25,25 +25,18 @@ const (
 )
 
 type application struct {
-	summaryViewDate      *time.Time
-	termLog              *logrus.Logger
-	log                  *logrus.Logger
-	form                 *form.Form
-	backup               *backup.Backup
-	err                  error
-	mode                 int
-	area                 Area
-	filterLineHeight     int
-	taskStatusLineHeight int
-	errorLineHeight      int
-	focusedField         string
-	db                   database.Database
-	numRows              int
-	filter               string
-	visibleTaskCodes     []string
-	jiraClient           *jira.Client
-	views                map[int]View
-	activeView           View
+	summaryViewDate *time.Time
+	termLog         *logrus.Logger
+	log             *logrus.Logger
+	form            *form.Form
+	backup          *backup.Backup
+	err             error
+	mode            int
+	area            Area
+	db              database.Database
+	jiraClient      *jira.Client
+	views           map[int]View
+	activeView      View
 }
 
 func selectByCode(code string) ItemMatcherFunc {
@@ -267,10 +260,8 @@ func formatTime(t *time.Time) string {
 func (a *application) redrawError(xOffset, yOffset int) int {
 	if a.err != nil {
 		a.drawError(xOffset, yOffset, a.err.Error())
-		a.errorLineHeight = 1
 		return 1
 	}
-	a.errorLineHeight = 0
 	return 0
 }
 
@@ -278,12 +269,8 @@ func (a *application) redrawForm(area Area, frm *form.Form) {
 	xOffset := area.XMin() + 1
 	yOffset := area.YMin() + 1
 	inputStartOffset := 0
-	a.focusedField = ""
 	for _, fld := range frm.Fields() {
 		isFocused := frm.IsFocused(fld.Code)
-		if isFocused && a.focusedField != fld.Code {
-			a.focusedField = fld.Code
-		}
 		afterLabel := a.drawLabel(xOffset, yOffset, fld.Label, isFocused)
 		if afterLabel+1 > inputStartOffset {
 			inputStartOffset = afterLabel + 1
@@ -341,7 +328,6 @@ func (a *application) drawLine(yOffset int) {
 func (a *application) switchMode(mode int) {
 	a.mode = mode
 	a.form = nil
-	a.focusedField = ""
 	a.err = nil
 	view, ok := a.views[mode]
 	if ok {
