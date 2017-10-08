@@ -1,6 +1,8 @@
 package backup
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -57,6 +59,9 @@ func New(opts *Options) (*Backup, error) {
 }
 
 func (b *Backup) Available() bool {
+	if b.resticPath != "" {
+		return true
+	}
 	path, err := exec.LookPath("restic")
 	if err != nil {
 		return false
@@ -82,16 +87,35 @@ func (b *Backup) Created() bool {
 	return b.created
 }
 
-func (b *Backup) CreateSnapshot() error {
-	cmd := exec.Command(b.resticPath, "backup", b.sourcePath)
-	cmd.Env = []string{
+func (b *Backup) createEnv() []string {
+	return []string{
 		fmt.Sprintf("RESTIC_REPOSITORY=%s", b.repositoryPath),
 		fmt.Sprintf("RESTIC_PASSWORD_FILE=%s", b.passwordFile),
 	}
+}
+
+func (b *Backup) CreateSnapshot() error {
+	cmd := exec.Command(b.resticPath, "backup", b.sourcePath)
+	cmd.Env = b.createEnv()
 	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (b *Backup) Snapshots() ([]Snapshot, error) {
+	cmd := exec.Command(b.resticPath, "snapshots", "--json")
+	cmd.Env = b.createEnv()
+	var buffer bytes.Buffer
+	cmd.Stdout = &buffer
+	if err := cmd.Run(); err != nil {
+		return nil, err
+	}
+	var result []Snapshot
+	if err := json.NewDecoder(&buffer).Decode(&result); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func (b *Backup) ensurePasswordFile() error {
@@ -132,10 +156,7 @@ func (b *Backup) ensureRepository() error {
 
 func (b *Backup) createRepository() error {
 	cmd := exec.Command(b.resticPath, "init")
-	cmd.Env = []string{
-		fmt.Sprintf("RESTIC_REPOSITORY=%s", b.repositoryPath),
-		fmt.Sprintf("RESTIC_PASSWORD_FILE=%s", b.passwordFile),
-	}
+	cmd.Env = b.createEnv()
 	if err := cmd.Run(); err != nil {
 		return err
 	}

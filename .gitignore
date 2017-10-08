@@ -1,2 +1,4 @@
 /clocked
+/internal/backup/sample-source
+/internal/backup/sample-source_backups
 *.log
