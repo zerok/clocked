@@ -34,6 +34,9 @@ func (v *tasklistView) KeyMapping() []KeyMap {
 	result = append(result, KeyMap{Label: "Down", Key: "j"})
 	result = append(result, KeyMap{Label: "Up", Key: "k"})
 	result = append(result, KeyMap{Label: "Filter", Key: "f"})
+	if v.app.db.ActiveCode() != "" {
+		result = append(result, KeyMap{Label: "Jump to active", Key: "^a"})
+	}
 	result = append(result, KeyMap{Label: "Daily summary", Key: "^s"})
 	return result
 }
