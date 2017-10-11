@@ -213,6 +213,10 @@ func (v *tasklistView) HandleKeyEvent(evt termbox.Event) error {
 		if a.db.ActiveCode() == selectedTask.Code {
 			if err := a.db.ClockOutOf(a.db.ActiveCode()); err != nil {
 				a.err = err
+			} else if a.backup != nil {
+				if err := a.backup.CreateSnapshot(); err != nil {
+					a.fatalError(err, "failed to create snapshot")
+				}
 			}
 			return nil
 		}
