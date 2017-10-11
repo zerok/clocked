@@ -34,6 +34,9 @@ func (v *tasklistView) KeyMapping() []KeyMap {
 	result = append(result, KeyMap{Label: "Down", Key: "j"})
 	result = append(result, KeyMap{Label: "Up", Key: "k"})
 	result = append(result, KeyMap{Label: "Filter", Key: "f"})
+	if v.app.backup.Available() {
+		result = append(result, KeyMap{Label: "Backups", Key: "b"})
+	}
 	if v.app.db.ActiveCode() != "" {
 		result = append(result, KeyMap{Label: "Jump to active", Key: "^a"})
 	}
@@ -188,6 +191,8 @@ func (v *tasklistView) HandleKeyEvent(evt termbox.Event) error {
 	case evt.Key == termbox.KeyCtrlA || evt.Ch == 'a':
 		v.clearFilter()
 		v.jumpToActiveTask()
+	case v.app.backup.Available() && evt.Ch == 'b':
+		v.app.switchMode(snapshotsMode)
 	case evt.Ch == 'g':
 		v.clearFilter()
 	case evt.Key == termbox.KeyCtrlF || evt.Ch == 'f':

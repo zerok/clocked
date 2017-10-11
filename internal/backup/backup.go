@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 
 	"github.com/satori/go.uuid"
 
@@ -103,6 +104,29 @@ func (b *Backup) CreateSnapshot() error {
 	return nil
 }
 
+func (b *Backup) Restore(id string) error {
+	cmd := exec.Command(b.resticPath, "restore", "--target", filepath.Dir(b.sourcePath), id)
+	cmd.Env = b.createEnv()
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	return nil
+}
+
+type ByTime []Snapshot
+
+func (s ByTime) Len() int {
+	return len(s)
+}
+
+func (s ByTime) Less(i int, j int) bool {
+	return s[i].RawTime < s[j].RawTime
+}
+
+func (s ByTime) Swap(i int, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
 func (b *Backup) Snapshots() ([]Snapshot, error) {
 	cmd := exec.Command(b.resticPath, "snapshots", "--json")
 	cmd.Env = b.createEnv()
@@ -115,6 +139,7 @@ func (b *Backup) Snapshots() ([]Snapshot, error) {
 	if err := json.NewDecoder(&buffer).Decode(&result); err != nil {
 		return nil, err
 	}
+	sort.Sort(sort.Reverse(ByTime(result)))
 	return result, nil
 }
 

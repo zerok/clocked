@@ -22,6 +22,7 @@ const (
 	filterMode    = iota
 	syncMode      = iota
 	editTaskMode  = iota
+	snapshotsMode = iota
 )
 
 type application struct {
@@ -61,6 +62,7 @@ func newApplication() *application {
 		newTaskMode:   newCreateTaskView(a),
 		syncMode:      newSyncView(a),
 		editTaskMode:  newEditTaskView(a),
+		snapshotsMode: newSnapshotView(a),
 	}
 	return a
 }
