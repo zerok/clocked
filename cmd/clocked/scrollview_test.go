@@ -17,13 +17,15 @@ func TestScrollviewUpdateOffset(t *testing.T) {
 		Width:  5,
 		Height: 5,
 	})
-	sv.windowSize = 3
+	require.Equal(t, 4, sv.windowSize)
+
 	sv.selectedIndex = 3
 	sv.recalculateOffset()
-	require.Equal(t, 1, sv.offset)
+	require.Equal(t, 0, sv.offset, "No offset should be required to show the last visible item")
+
 	sv.selectedIndex = 4
 	sv.recalculateOffset()
-	require.Equal(t, 2, sv.offset)
+	require.Equal(t, 1, sv.offset, "1 as offset should be set for focusing the first not-visible item")
 }
 
 func TestScrollViewSelectedItem(t *testing.T) {
@@ -32,15 +34,17 @@ func TestScrollViewSelectedItem(t *testing.T) {
 		MockScrollViewItem("a"),
 		MockScrollViewItem("b"),
 		MockScrollViewItem("c"),
+		MockScrollViewItem("d"),
+		MockScrollViewItem("e"),
 	})
 
 	// Let's make sure that jumping around with next and previous updates the
 	// selected item
 	sv.Next()     // a
-	sv.Previous() // c
+	sv.Previous() // e
 	selected, ok := sv.SelectedItem()
 	require.True(t, ok, "An item should have been selected")
-	require.Equal(t, "c", selected.Label(), "c should have been the selected item")
+	require.Equal(t, "e", selected.Label(), "e should have been the selected item")
 
 	// If the number of available items gets smaller and the previously
 	// selected item is beyond that number, no item should end up being

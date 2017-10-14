@@ -21,11 +21,12 @@ type ScrollableList struct {
 }
 
 func NewScrollableList(area Area) *ScrollableList {
-	return &ScrollableList{
+	sv := &ScrollableList{
 		items:         make([]ScrollableListItem, 0, 0),
-		area:          area,
 		selectedIndex: -1,
 	}
+	sv.UpdateArea(area)
+	return sv
 }
 
 func (s *ScrollableList) SelectItemByLabel(l string) (int, bool) {

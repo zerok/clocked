@@ -235,6 +235,7 @@ func (v *tasklistView) HandleKeyEvent(evt termbox.Event) error {
 			}
 		}
 		v.clearFilter()
+		v.jumpToActiveTask()
 	default:
 	}
 	return nil
