@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -14,14 +15,23 @@ import (
 	"github.com/zerok/clocked/internal/jira"
 )
 
+var version, commit, date string
+
 func main() {
 	var verbose bool
 	var storageFolder string
 	var logFile string
+	var showVersion bool
 	pflag.BoolVar(&verbose, "verbose", false, "Verbose logging")
 	pflag.StringVar(&logFile, "log-file", "", "Path to a logfile")
 	pflag.StringVar(&storageFolder, "store", filepath.Join(os.Getenv("HOME"), ".clocked"), "Path where clocked will store its data")
+	pflag.BoolVar(&showVersion, "version", false, "Show version information")
 	pflag.Parse()
+
+	if showVersion {
+		fmt.Printf("Version: %s\nCommit: %s\nDate: %s\n", version, commit, date)
+		os.Exit(0)
+	}
 
 	log := logrus.New()
 	if logFile != "" {
