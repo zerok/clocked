@@ -12,6 +12,15 @@ type Task struct {
 	Bookings []Booking `yaml:"bookings"`
 }
 
+func (t *Task) HasTag(tag string) bool {
+	for _, tg := range t.Tags {
+		if tg == tag {
+			return true
+		}
+	}
+	return false
+}
+
 func (t *Task) Start(tm time.Time) error {
 	b := Booking{}
 	b.SetStart(tm)

@@ -13,6 +13,7 @@ tasks to it. Every screen will show you a list of all the available keyboard
 commands. If you don't want to sync your tasks with JIRA, then there is even
 nothing for you to configure :-)
 
+
 ## Synchronizing your work-time with JIRA worklogs
 
 If you do want to sync with JIRA, you will have to create a
@@ -33,6 +34,10 @@ sync-view and `s` to actually start the synchronization.
 
 This will delete all your worklogs of the selected date and create new ones
 for your tasks as tracked by clocked.
+
+If you don't want specific tasks not to be synchornized you can assign them
+the tag "offline". These tasks will be shown on the sync-view as offline
+tasks.
 
 
 ## Backups using restic

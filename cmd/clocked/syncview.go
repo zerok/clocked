@@ -49,6 +49,8 @@ func (v *syncView) Render(area Area) error {
 }
 
 func (v *syncView) renderListing() {
+	offlineBookings, onlineBookings := v.filterOfflineBookings(v.summary.Bookings)
+
 	v.app.drawHeadline(v.area.XMin(), v.area.YMin(), fmt.Sprintf("Sychronizing tasks for %s with JIRA", v.date.Format("Mon, 2 Jan 2006")))
 	var maxStatusLength int
 	for _, s := range v.syncStatus {
@@ -56,9 +58,35 @@ func (v *syncView) renderListing() {
 			maxStatusLength = len(s)
 		}
 	}
-	for idx, booking := range v.summary.Bookings {
+	yOffset := 0
+	for idx, booking := range onlineBookings {
 		v.app.drawText(v.area.XMin(), v.area.YMin()+idx+1, fmt.Sprintf("[%s] %s - %s: %s", v.renderStatus(v.syncStatus[idx], maxStatusLength), formatTime(booking.Start), formatTime(booking.Stop), booking.Code), termbox.ColorDefault, termbox.ColorDefault)
+		yOffset = v.area.YMin() + idx + 1
 	}
+
+	if len(offlineBookings) > 0 {
+		yOffset += 2
+		v.app.drawText(v.area.XMin(), yOffset, "Offline bookings:", termbox.ColorDefault|termbox.AttrBold, termbox.ColorDefault)
+		yOffset++
+		for _, b := range offlineBookings {
+			v.app.drawText(v.area.XMin(), yOffset, fmt.Sprintf("%s - %s: %s", formatTime(b.Start), formatTime(b.Stop), b.Code), termbox.ColorDefault, termbox.ColorDefault)
+		}
+	}
+}
+
+func (v *syncView) filterOfflineBookings(all []database.TaskBooking) ([]database.TaskBooking, []database.TaskBooking) {
+	offlineBookings := make([]database.TaskBooking, 0, 5)
+	onlineBookings := make([]database.TaskBooking, 0, len(all))
+	for _, b := range all {
+		if t, found := v.app.db.TaskByCode(b.Code); found {
+			if t.HasTag("offline") {
+				offlineBookings = append(offlineBookings, b)
+			} else {
+				onlineBookings = append(onlineBookings, b)
+			}
+		}
+	}
+	return offlineBookings, onlineBookings
 }
 
 func (v *syncView) HandleKeyEvent(evt termbox.Event) error {
@@ -68,9 +96,11 @@ func (v *syncView) HandleKeyEvent(evt termbox.Event) error {
 	case evt.Ch == 's':
 		termbox.Close()
 		if err := v.app.jiraClient.RemoveDatedWorklogs(context.Background(), v.date); err != nil {
-			fmt.Println(err)
+			v.app.err = err
+			return err
 		}
-		for idx, b := range v.summary.Bookings {
+		_, onlineBookings := v.filterOfflineBookings(v.summary.Bookings)
+		for idx, b := range onlineBookings {
 			if err := v.app.jiraClient.AddWorklog(context.Background(), b.Code, *b.Start, b.Duration()); err != nil {
 				v.app.err = err
 				v.syncStatus[idx] = "error"

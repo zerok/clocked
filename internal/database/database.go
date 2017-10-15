@@ -21,4 +21,5 @@ type Database interface {
 	FilteredTasks(f string) ([]clocked.Task, error)
 	GenerateDailySummary(time.Time) Summary
 	Empty() bool
+	TaskByCode(string) (clocked.Task, bool)
 }

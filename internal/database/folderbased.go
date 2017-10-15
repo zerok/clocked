@@ -57,6 +57,15 @@ func NewDatabase(path string, log *logrus.Logger) (Database, error) {
 	return &d, nil
 }
 
+func (d *FolderBasedDatabase) TaskByCode(code string) (clocked.Task, bool) {
+	for _, t := range d.taskIndex {
+		if t.Code == code {
+			return t, true
+		}
+	}
+	return clocked.Task{}, false
+}
+
 func (d *FolderBasedDatabase) LoadState() error {
 	d.log.Infof("Loading state")
 	activeCodeFile := filepath.Join(d.rootFolder, ActiveCodeFilename)

@@ -22,6 +22,14 @@ func NewInMemory() *InMemory {
 	return db
 }
 
+func (d *InMemory) TaskByCode(code string) (clocked.Task, bool) {
+	idx, found := d.taskmap[code]
+	if !found {
+		return clocked.Task{}, false
+	}
+	return d.tasks[idx], false
+}
+
 func (d *InMemory) ActiveCode() string {
 	return d.activeCode
 }
