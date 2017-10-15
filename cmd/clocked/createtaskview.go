@@ -15,6 +15,10 @@ func newCreateTaskForm() *form.Form {
 			Code:       "title",
 			Label:      "Title:",
 			IsRequired: true,
+		}, {
+			Code:       "tags",
+			Label:      "Tags:",
+			IsRequired: false,
 		},
 	})
 }
