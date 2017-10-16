@@ -21,6 +21,8 @@ func (v *summaryView) KeyMapping() []KeyMap {
 	return []KeyMap{
 		{Label: "Quit", Key: "^c"},
 		{Label: "Task list", Key: "q/ESC"},
+		{Label: "Later", Key: "j"},
+		{Label: "Earlier", Key: "k"},
 		{Label: "JIRA sync", Key: "^j"},
 	}
 }
