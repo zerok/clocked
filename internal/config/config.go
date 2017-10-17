@@ -8,6 +8,7 @@ import (
 )
 
 type Config struct {
+	BackupsPath  string `yaml:"backups_path"`
 	JIRAUsername string `yaml:"jira_username"`
 	JIRAURL      string `yaml:"jira_url"`
 	JIRAPassword string

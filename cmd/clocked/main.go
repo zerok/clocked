@@ -65,7 +65,8 @@ func main() {
 	}
 
 	bk, err := backup.New(&backup.Options{
-		SourcePath: storageFolder,
+		SourcePath:     storageFolder,
+		RepositoryPath: cfg.BackupsPath,
 	})
 	if err != nil {
 		log.WithError(err).Fatal("Failed to configure backup")

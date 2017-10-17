@@ -98,19 +98,13 @@ func (b *Backup) createEnv() []string {
 func (b *Backup) CreateSnapshot() error {
 	cmd := exec.Command(b.resticPath, "backup", b.sourcePath)
 	cmd.Env = b.createEnv()
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
+	return cmd.Run()
 }
 
 func (b *Backup) Restore(id string) error {
 	cmd := exec.Command(b.resticPath, "restore", "--target", filepath.Dir(b.sourcePath), id)
 	cmd.Env = b.createEnv()
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
+	return cmd.Run()
 }
 
 type ByTime []Snapshot

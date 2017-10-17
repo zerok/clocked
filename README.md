@@ -48,6 +48,19 @@ clock in or out, a new snapshot will be made. By default the backup repository
 is stored in `$HOME/.clocked_backups` and its password is saved in
 `$HOME/.clocked/backups.passwd`
 
+If you want to keep your backups somewhere else (e.g. inside a Dropbox folder)
+you have to do two things:
+
+1. Move `~/.clocked_backups` to its target location.
+2. Inside `~/.clocked/config.yml` add the following line:
+   
+   ```
+   backups_path: /Users/yourname/Dropbox/clocked_backups
+   ```
+   
+   Replace `/Users/yourname/Dropbox/clocked_backups` with whatever path you
+   moved the backups to in step 1 🙂
+
 ## Command-line arguments
 
 - `--log-file <path/to/file>` specifies a path to a logfile clocked should
