@@ -70,6 +70,7 @@ func newApplication() *application {
 func (a *application) start() {
 	a.reset()
 	a.switchMode(selectionMode)
+
 	a.redrawAll()
 	for {
 		a.handleResize()
@@ -81,6 +82,7 @@ func (a *application) start() {
 				return
 			}
 		}
+
 		a.redrawAll()
 	}
 }
@@ -237,11 +239,12 @@ func (a *application) drawKeyMapping(area Area, mapping []KeyMap) int {
 
 func (a *application) redrawAll() {
 	a.reset()
-	yOffset := a.redrawError(2, 1)
+	yOffset := a.redrawError()
 
 	if a.activeView != nil {
 		contentArea := Area(a.area)
 		contentArea.Y = yOffset
+		contentArea.Height -= yOffset
 
 		if km, ok := a.activeView.(Keymapper); ok {
 			contentArea.Height -= a.drawKeyMapping(contentArea, km.KeyMapping())
@@ -259,9 +262,9 @@ func formatTime(t *time.Time) string {
 	return t.Format("15:04:05")
 }
 
-func (a *application) redrawError(xOffset, yOffset int) int {
+func (a *application) redrawError() int {
 	if a.err != nil {
-		a.drawError(xOffset, yOffset, a.err.Error())
+		a.drawError(a.area.XMin(), a.area.YMin(), a.err.Error())
 		return 1
 	}
 	return 0
