@@ -2,6 +2,7 @@ package clocked
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -65,4 +66,18 @@ func (b *Booking) StopTime() *time.Time {
 	}
 	t, _ := time.Parse(time.RFC3339, b.Stop)
 	return &t
+}
+
+type ByCode []Task
+
+func (l ByCode) Len() int {
+	return len(l)
+}
+
+func (l ByCode) Less(i int, j int) bool {
+	return strings.Compare(l[i].Code, l[j].Code) < 0
+}
+
+func (l ByCode) Swap(i int, j int) {
+	l[i], l[j] = l[j], l[i]
 }

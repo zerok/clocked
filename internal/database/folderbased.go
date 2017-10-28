@@ -68,6 +68,8 @@ func (d *FolderBasedDatabase) TaskByCode(code string) (clocked.Task, bool) {
 
 func (d *FolderBasedDatabase) LoadState() error {
 	d.log.Infof("Loading state")
+	d.taskCodeIndex = make(map[string]struct{})
+	d.taskIndex = make([]clocked.Task, 0, 20)
 	activeCodeFile := filepath.Join(d.rootFolder, ActiveCodeFilename)
 	tasksFolder := filepath.Join(d.rootFolder, TasksFolder)
 

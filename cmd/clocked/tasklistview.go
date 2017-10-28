@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 
 	termbox "github.com/nsf/termbox-go"
 	"github.com/zerok/clocked"
@@ -59,6 +60,7 @@ func newTasklistView(app *application) *tasklistView {
 func (v *tasklistView) updateTaskList() {
 	a := v.app
 	tasks, _ := a.db.FilteredTasks(v.filter)
+	sort.Sort(clocked.ByCode(tasks))
 	items := make([]ScrollableListItem, 0, len(tasks))
 	for _, t := range tasks {
 		items = append(items, t)
